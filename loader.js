@@ -1,5 +1,6 @@
 const { setupLoader } = require('@openzeppelin/contract-loader')
-const web3 = require('./web3.js')
+const { networks: { ropsten: { provider } } } = require('./networks.js')
 
-const loader = setupLoader({ provider: web3 })
+const loader = setupLoader({ provider, defaultSender: process.env.ACCOUNT })
+
 module.exports = loader
