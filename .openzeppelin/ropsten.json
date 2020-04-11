@@ -1,0 +1,24 @@
+{
+  "contracts": {},
+  "solidityLibs": {},
+  "proxies": {
+    "ethernaut/HackCoinFlip": [
+      {
+        "address": "0x66033f1838CBB78498B188402b7AD690810c7bC1",
+        "kind": "NonProxy",
+        "bytecodeHash": "c9bf03fd62ff3780a97ea869c34f2d799641660635fe43264f04382ee732ba55"
+      },
+      {
+        "address": "0x46541E18eC21ED18f079b3A1bEd708C7e14f6be6",
+        "kind": "NonProxy",
+        "bytecodeHash": "00a23341eb2f6e14326caaea6159b1cf160d4ff2d6c74a30fddfd62cb4c30470"
+      },
+      {
+        "address": "0x7c98DCA07eF32978F5d47524AE3D3DbD7Dc74Ae8",
+        "kind": "NonProxy",
+        "bytecodeHash": "e41042db39061c3c5ec5b4598d69e29d43608c3b1d5dc704191b8b6efbbab975"
+      }
+    ]
+  },
+  "manifestVersion": "2.2"
+}

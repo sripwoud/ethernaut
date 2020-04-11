@@ -20,5 +20,3 @@ const instance = require('../prompt.js');
     console.log(err.message)
   }
 })()
-
-// process.exit()
