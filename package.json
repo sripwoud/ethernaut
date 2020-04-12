@@ -13,6 +13,7 @@
     "@openzeppelin/contract-loader": "^0.6.1",
     "@openzeppelin/contracts": "^2.5.0",
     "@openzeppelin/contracts-ethereum-package": "^2.5.0",
+    "@truffle/contract": "^4.2.0",
     "@truffle/hdwallet-provider": "^1.0.34",
     "dotenv": "^8.2.0",
     "ganache-core": "^2.10.2",
