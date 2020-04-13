@@ -258,7 +258,7 @@ Upon submission, the level contract sends an Ether amount higher than `prize` to
 3. Submit instance
 
 ### Takeaways
-- Assume any externall account or contract you don't know/own is potentially malicious
+- Assume any external account or contract you don't know/own is potentially malicious
 - Never assume transactions to external contracts will be successful
 - Handle failed transactions on the client side in the event you do depend on transaction success to execute other core logic.
 
@@ -266,16 +266,41 @@ Especially when transferring ETH:
 - Avoid using `send()` or `transfer()`. If using `send()` check returned value
 - Prefer a ['withdraw' pattern](https://solidity.readthedocs.io/en/v0.6.2/common-patterns.html#withdrawal-from-contracts) to send ETH
 
-## <a name='Reetrancy'></a>Level 10 - Re-entrancy
-### Contract
-```
-
-```
-
+## <a name='Reentrancy'></a>Level 10 - Re-entrancy
+**Target: steal all funds from the [contract](./contracts/levels/Renetrance.sol).**
 ### Weakness
-### Solidity Concepts
+Similarly to the attack in the [level 7](#level7), when sending directly funds to an address, one does not now if it is an POA or a contract, and how the contract the contract will handle the funds.
+The fallback could "reenter" in the function that triggered it.
+If the check effect interaction pattern is not followed, one could withdraw all the funds of a contract: e.g if a mapping that lists the users' balance is updated only at the end at the function!
+### Solidity Concepts: "reenter",  calling back the contract that initiated the transaction and execute the same function again.
+Check also the differences between `call`, `send` and `transfer` seed in [level 7](#level7).
+Especially by using `call()`, gas is forwarded, so the effect would be to reenter multiple times until the gas is exhausted.
 ### Hack
+1. Deploy an attacker contract
+2. Implement a payable fallback that "reenter" in the victim contract: the fallback calls `reentrance.withdraw()`
+3. Donate  an amount `donation`
+4. "Reenter" by withdrawing `donation`: call `reentrance.withdraw(donation)` from attacker contract
+5. Read `remaining` balance of victim contract: `remaining = reentrance.balance`
+6. Withdraw `remaining`: call `reentrance.withdraw(remaining)` from attacker contract
+
 ### Takeaways
+To protect smart contracts against reentrancy attacks, it used to be recommended to use `transfer()`  instead of `send` or `call` as it limits the gas forwarded. However gas costs are subject to change. Especially with [EIP 1884](https://eips.ethereum.org/EIPS/eip-1884) gas price changed.
+**So smart contracts logic should not depend on gas costs as  it can potentially break contracts.**
+Therefore `transfer`  is then no longer recommended. [Source 1](https://diligence.consensys.net/blog/2019/09/stop-using-soliditys-transfer-now/) [Source 2](https://forum.openzeppelin.com/t/reentrancy-after-istanbul/1742)
+Use `call` instead. As it forwards all the gas, execution of your smart contract won't break.
+But if we use `call` and don't limit gas anymore to prevent ourselves from errors caused by running out of gas, we are then exposed to reentrancy attacks, aren't we?!
+This is why one must:
+- **Respect the [check-effect-interaction pattern](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#use-the-checks-effects-interactions-pattern).**
+	1. Perform checks
+		- who called? `msg.sender == ?`
+		- how much is send? `msg.value == ?`
+		- Are arguments in range
+		- Other conditions...
+	2. If checks are passed, perform effects to state variables
+	3. Interact with other contracts or addresses
+		- external contract function calls
+		- send ethers ...
+- or use a **use a reentrancy guard: a modifier that checks for the value of a `locked` bool**
 
 ## Credit
 [Nicole Zhu](https://medium.com/@nicolezhu).  
