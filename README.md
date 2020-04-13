@@ -1,4 +1,6 @@
-# Ethernaut
+# The Ethernaut
+*The Ethernaut is a Web3/Solidity based wargame inspired from [overthewire.org](https://overthewire.org/wargames/), played in the Ethereum Virtual Machine. Each level is a smart contract that needs to be 'hacked'.*
+
 [Level 1: Fallback](#Fallback)  
 [Level 2: Fallout](#Fallout)  
 [Level 3: Coin Flip](#CoinFlip)  
@@ -9,6 +11,104 @@
 [Level 8: Vault](#Vault)  
 [Level 9: King](#King)  
 [Level 10: Reentrancy](#Reentrancy)  
+
+## <a name='Fallback'></a>Level 1 - Fallback
+**Target: claim ownership of the [contract](./contracts/levels/Fallback.sol) & reduce its balance to 0.**
+### Weakness
+The contract's fallback function can owneship of the contract. The conditional requirements are not secure: any contributor can become owner after sending any value to the contract.
+### Solidity concept: [fallback function](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#fallback-function)
+*A contract can have at most one fallback function, declared using fallback () external [payable] (without the function keyword). This function cannot have arguments, cannot return anything and must have external visibility. It is executed on a call to the contract if none of the other functions match the given function signature, or if no data was supplied at all and there is no receive Ether function. The fallback function always receives data, but in order to also receive Ether it must be marked payable.
+Like any function, the fallback function can execute complex operations as long as there is enough gas passed on to it.*
+### Hack
+1. Contribute
+2. Send any amount to the contract, which will trigger the fallback.
+3. Conditional requirements will be met
+4. Sender becomes the owner
+
+### Takeaways
+- Be careful when implementing a fallback that changes state as it can be triggered by anyone sending ETH to the contract.
+- Avoid writing a fallback that can perform critical actions such as changing ownership or transfer funds.
+- A common pattern is to let the fallback only emit events (e.g emit FundsReceived).
+
+## <a name='Fallout'></a>Level 2 - Fallout
+**Target: claim ownership of the [contract](./contracts/levels/Fallout.sol).**
+### Weakness
+The contract used a syntax deprecated since v 0.5. The function meant to be the constructor isn't one. It can actually be called after contract initialisation. It has a public visibility and can be called by anyone.
+### Solidity Concept: [constructor](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#constructors)
+*A constructor is an optional function declared with the constructor keyword which is executed upon contract creation, and where you can run contract initialisation code.
+Before the constructor code is executed, state variables are initialised to their specified value if you initialise them inline, or zero if you do not.*
+**Prior to version 0.4.22, constructors were defined as functions with the same name as the contract. This syntax was deprecated and is not allowed anymore in version 0.5.0.**
+
+The `Fal1out()` function was supposed to be named `Fallout()` and would have been the contract's constructor as syntax previous version 0.5.
+### Hack
+Simply call the `Fal1out() function`.
+### Takeaways
+- Work with the latest compiler versions which are more secure.
+- Listen to the compiler warnings.
+- Do test driven development to detect typos.
+
+## <a name='CoinFlip'></a> Level 3 - Coin Flip
+**Target: [guess](./contracts/levels/CoinFlip.sol) the correct outcome 10 times in a row.**
+### Weakness
+The contract tries to create randomness by relying on blockhashes, block number and a given `FACTOR`. This data isn't secret:
+- `blockhash()` and `block.number` are global variables in solidity
+- the `FACTOR` used to compute the `coinFlip` value can be reused by the attacker
+
+### Solidity Concepts
+`blockhash(uint blockNumber) returns (bytes32)`:  hash of the given block - only works for 256 most recent blocks
+`block.number (uint)`: current block number
+### Hack
+Deploy an [attacker contract](https://github.com/r1oga/ethernaut/blob/master/contracts/attacks/HackCoinFlip.sol):
+The attacker contract compute itself the `blockValue` by using the `block.number` and `blockhash()` global variables.
+As `FACTOR` is known, the attacker contract can next compute`coinFlip` and `side`.
+We pass the right `side` argument to the original flip function that we call from the attacker contract.
+### Takeaways
+There’s no true randomness on Ethereum blockchain, only "pseudo-randomness": random generators that are considered “good enough”.
+There currently isn't a native way to generate them.
+Everything used in smart contracts is publicly visible, including the local variables and state variables marked as private.
+Miners also have control over things like blockhashes, timestamps, and whether to include certain transactions - which allows them to bias these values in their favor.
+## <a name='Telephone'></a>Level 4 - Telephone
+**Target: claim ownership of the [contract](./contracts/levels/Telephone.sol).**
+### Weakness
+A conditional requirements uses `tx.origin`
+### Solidity Concepts: [tx.origin vs msg.sender](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#tx-origin)
+- `tx.origin (address payable)`:  sender of the transaction (full call chain)
+- `msg.sender (address payable)`: sender of the message (current call)
+
+In the situation where a user call a function in contract 1, that will call function of contract 2:
+
+||at execution contract 1|at execution in contract 2|
+|--|--|--|
+|msg.sender|userAddress|contract1Address
+|tx.origin|userAddress|userAddress|userAddress
+
+### Hack
+Deploy an attacker contract.
+Call the `changeOwner` function of the original contract from the attacker contract to ensure `tx.origin != msg.sender` and pass the conditional requirement.
+### Takeaways
+[Don't use `tx.origin`](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#tx-origin)
+## <a name='Fallback'></a>Level 5 - Token
+**Target: You are given 20 tokens to start with and you will beat the [level](./contracts/levels/Token.sol)
+if you somehow manage to get your hands on any additional tokens. Preferably a very large amount of tokens.**
+### Weakness
+An sum operation is performed but overflow isn't checked for.
+### Solidity Concepts: bits storage, [underflow/overflow](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#two-s-complement-underflows-overflows)
+Ethereum’s smart contract storage slot are each 256 bits, or 32 bytes. Solidity supports both signed integers, and unsigned integers uint of up to 256 bits.
+However *as in many programming languages, Solidity’s integer types are not actually integers. They resemble integers when the values are small, but behave differently if the numbers are larger. For example, the following is true: uint8(255) + uint8(1) == 0. This situation is called an overflow. It occurs when an operation is performed that requires a fixed size variable to store a number (or piece of data) that is outside the range of the variable’s data type. An underflow is the converse situation: uint8(0) - uint8(1) == 255.*
+![over/underflow image](https://miro.medium.com/max/1400/1*xAYyHOxwWcMUU5ycSbCp8Q.jpeg)
+
+### Hack
+Provoke the overflow by transferring 21 tokens to the contract.
+### Takeaway
+Check for over/underflow manually:
+```
+if(a + c > a) {
+  a = a + c;
+}
+```
+Or use [OpenZeppelin's math library](https://docs.openzeppelin.com/contracts/2.x/api/math) that automatically checks for overflows in all the mathematical operators.
+
+
 ## <a name='Delegation'></a>Level 6 - Delegation
 **Target: claim ownership of the [contract](./contracts/level/Delgation.sol).**
 ### Weakness
@@ -176,3 +276,9 @@ Especially when transferring ETH:
 ### Solidity Concepts
 ### Hack
 ### Takeaways
+
+## Credit
+[Nicole Zhu](https://medium.com/@nicolezhu).  
+I couldn't solve a couple of levels myself and I had to cheat 😅.
+Her walkthroughs are great teaching materials on Solidity.
+I also reused some of the diagram images from her posts.
