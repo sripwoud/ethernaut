@@ -12,6 +12,18 @@
 [Level 9: King](#King)  
 [Level 10: Reentrancy](#Reentrancy)  
 
+## Requirements
+- [Infura](https://infura.io/) project ID on Ropsten network
+- [Metamask](https://metamask.io/)
+
+## Getting started
+1. Clone repository
+2. Install dependencies: `npm i`
+3. Compile contracts: `oz compile`
+4. Deploy your [ethernaut](https://solidity-05.ethernaut.openzeppelin.com/) instance level using metamask
+5. Create a `.env` file and define your INFURA_KEY, MNEMONIC, and ACCOUNT environment variables.
+6. Execute individual level hack: `node attacks/[level].js`
+
 ## <a name='Fallback'></a>Level 1 - Fallback
 **Target: claim ownership of the [contract](./contracts/levels/Fallback.sol) & reduce its balance to 0.**
 ### Weakness
