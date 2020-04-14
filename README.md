@@ -10,7 +10,12 @@
 [Level 7: Force](#Force)  
 [Level 8: Vault](#Vault)  
 [Level 9: King](#King)  
-[Level 10: Reentrancy](#Reentrancy)  
+[Level 10: Re-entrancy](#Reentrancy)  
+[Level 11: Elevator](#Elevator)  
+[Level 12: Privacy](#Privacy)  
+[Level 13: Gatekeeper One](#GatekeeperOne)  
+[Level 14: Gatekeeper Two](#GatekeeperTwo)  
+[Level 15: Naught Coin](#NaughtCoin)  
 
 ## Requirements
 - [Infura](https://infura.io/) project ID on Ropsten network
@@ -315,6 +320,173 @@ This is why one must:
 		- external contract function calls
 		- send ethers ...
 - or use a **use a re-entrancy guard: a modifier that checks for the value of a `locked` bool**
+
+## <a name='Elevator'></a>Level 11 - Elevator
+**Target: reach the top of the [Building](./contracts/levels/Elevator.sol).**
+### Weakness
+The `Elevator` never implements the `isLastFloor()` function from the `Building` interface. An attacker can create a contract that implements this function as it pleases him.
+### Solidity Concepts: [interfaces](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#interfaces) & [inheritance](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#inheritance)
+>Interfaces are similar to abstract contracts, but they cannot have any functions implemented.
+Contracts need to be marked as[abstract](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#abstract-contracts) when at least one of their functions is not implemented.
+
+**Contract Interfaces specifies the WHAT but not the HOW.**
+Interfaces allow different contract classes to talk to each other.
+They force contracts to communicate in the same language/data structure. However interfaces do not prescribe the logic inside the functions, leaving the developer to implement it.
+Interfaces are often used for token contracts. Different contracts can then work with the same language to handle the tokens.
+
+Interfaces are also often used in conjunction with Inheritance.
+>When a contract inherits from other contracts, only a single contract is created on the blockchain, and the code from all the base contracts is compiled into the created contract.
+Derived contracts can access all non-private members including internal functions and state variables. These cannot be accessed externally via `this`, though.
+They cannot inherit from other contracts but they can inherit from other interfaces.
+
+### Hack
+1. Write a malicious attacker contract that will implement the `isLastFloor` function of the `Building` interface
+2. implement `isLastFloor`
+Note that `isLastFloor` is called 2 times in `goTo`. The first time it has to return `True`, but the second time it has to return `False`
+3. invoke `goTo()` from the malicious contract so that the malicious version of the `isLastFloor` function is used in the context of our level’s Elevator instance!
+
+### Takeaways
+Interfaces guarantee a shared language but not contract security. Just because another contract uses the same interface, doesn’t mean it will behave in the same way.
+## <a name='Privacy'></a>Level 12 - Privacy
+**Target: unlock [contract](./contracts/levels/Privacy.sol).**
+### Weakness
+Similarly to the [Level 8 -Vault](#Vault), the contract's security relies on the value of a variable defined as private. This variable is actually publicy visible
+### Solidity Concepts
+The **layout of storage data in slots** and how to **read data from storage with `getStorageAt`** were covered in [Level 8 -Vault](#Vault).
+
+The slots are 32 bytes long.
+**1 byte = 8 bits = 4 nibbles = 4 hexadecimal digits**.
+In practice, when using e.g `getStorageAt` we get string hashes of length 64 + 2 ('0x') = 66.
+### Hack
+1. Analyse storage layout:
+|slot|variable|
+|--|--|
+|0|bool (1 bit long)|
+|1|ID (256 bits long)|
+|2|awkwardness (16 bytes) - denomination (8 bytes) - flattening (8 bytes)|
+|3|data[0] (32 bytes long)|
+|4|data[1] (32 bytes long)|
+|5|data[2] (32 bytes long)|
+
+The `_key` variable is slot 5.
+2. Take the first 16 bytes of the get: take the first 2 ('0x') + 2 * 16 = 34 characters of the bytestring.
+
+### Takeaways
+- Same as for [Level 8 -Vault](#Vault):
+	- All storage is publicly visible, even `private` variables
+	- Don't store passwords or secret data on chain without hashing them first
+- Storage optimization
+	-  Use `memory` instead of storage if persisting data in state is not necessary
+	- Order variables in such way that slots occupdation is maximized.
+
+![Less efficient storage layout](https://miro.medium.com/max/2000/1*g3odw8DHxmw0YPrhqDf3oA.jpeg)
+![More efficient storage layout](https://miro.medium.com/max/2000/1*Zl3EkleTiPQEssEsu44MuA.jpeg)
+
+## <a name=GatekeeperOne></a>Level 13 - Gatekeeper One
+**Target: make it past the [gatekeeper one](./contracts/levels/GatekeeperOne.sol).**
+### Weakness
+- Contract relies on `tx.origin`.
+- - Being able to read the public contract logic teaches how to pass gateTwo and gateThree.
+
+### Solidity Concepts: [explicit conversions](https://solidity.readthedocs.io/en/v0.6.6/types.html#explicit-conversions) and [masking](https://en.wikipedia.org/wiki/Mask_(computing))
+#### Explicit type conversions
+Be careful, **conversion of integers and bytes behave differently**!
+
+|conversion to|uint|bytes|
+|--|--|--|
+|shorter type|**left-truncate**: `uint8(273 = 0000 0001 0001 0001) = 00001 0001 = 17`|**right-truncate**: `bytes4(0x1111111122222222) = 0x11111111`|
+|larger type|**left-padded** with 0: `uint16(17 = 0001 0001) = 0000 0000 0001 0001 = 17`|**right-padded** with 0: `bytes8(0x11111111) = 0x1111111100000000`
+
+#### [Masking](https://en.wikipedia.org/wiki/Mask_(computing))
+Masking means using a particular sequence of bits to turn some bits of another sequence "on" or "off" via a bitwise operation.
+For example to "mask off" part of a sequence, we perform an `AND` bitwise operation with:
+- `0` for the bits to mask
+- `1` for the bits to keep
+
+```
+    10101010
+AND 00001111
+ =  00001010
+```
+### Hack
+1. Pass `gateOne`: deploy an attacker contract that will call the victim contract's `enter` function to ensure `msg.sender != tx.origin`.
+This is similar to what we've accomplished for the [Level 4 - Telephone](#Telephone)
+2. Pass `gateTwo`
+3. Pass `gateThree`
+Note that we need to pass a 8 bytes long `_gateKey`. It is then explicitly converted to a 64 bits long integer.
+	1. Part one
+		- `uint16(uint64(_gateKey))`: uint64 gateKey is converted to a shorter type (uint16) so we keep the last 16 bits of gateKey.
+		- `uint32(uint64(gateKey))`: uint64 gateKey is converted to a shorter type (uint32) so we keep the last 32 bits of gateKey
+		- `uint32(uint64(gateKey)) == uint16(uint64(gateKey))`: we convert uint16 to a larger type (uint32), so we pad the last 16 bits of gateKey with 16*0 on the left. This concatenation should equal the last 32 bits of gateKey.
+		- Mask to apply on the last 32 bits of gateKey:
+`0000 0000 0000 0000 1111 1111 1111 1111 = 0x0000FFFF`
+	2. Part two
+		- `uint32(uint64(gateKey)`: last 32 bits of gateKey
+		- `uint32(uint64(gateKey)) != uint64(_gateKey)`: the last 32 bits of gateKey are converted to a larger type (uint64), so we pad them with 32*0 on the left. This concanetation (32*0-last32bitsofGateKey) should not equal gateKey: so we need to keep the first bits of gateKey
+		- Mask to apply to keep the first 32 bits:
+`0xFFFFFFFF`  
+ - We then concatenate both masks:
+`0xFFFF FFFF 0000 FFFF`
+Requires keeping the first 32 bits, mask with 0xFFFFFFFF.
+Concatenated with the first part: mask = 0xFFFF FFFF 0000 FFFF
+	3. Part three: `uint32(uint64(gateKey)) == uint16(tx.origin)`
+	 - we need to take gatekey = tx.origin
+	 - we then apply the mask on tx.origin to ensure part one and two are correct
+
+### Takeaways
+- Abstain from asserting gas consumption in your smart contracts, as different compiler settings will yield different results.
+- Be careful about data corruption when converting data types into different sizes.
+- Save gas by not storing unnecessary values.
+- Save gas by using appropriate modifiers to get functions calls for free, i.e. external pure or external view function calls are free!
+- Save gas by masking values (less operations), rather than typecasting
+
+## <a name='GatekeeperTwo'></a>Level 14 - Gatekeeper Two
+**Target: make through the [gatekeeper two](./contracts/levels/GatekeeperTwo.sol)**
+### Weakness
+- gateOne relies on `tx.origin`.
+- Being able to reading the public contract logic teaches how to pass gateTwo and gateThree.
+
+### Solidity Concepts: [inline assembly](https://solidity.readthedocs.io/en/v0.6.6/assembly.html) & contract creation/initialization
+
+From the [Ethereum yellow paper](https://ethereum.github.io/yellowpaper/paper.pdf) section 7.1 - subtleties we learn:
+> while the initialisation code is executing, the newly created address exists but with no intrinsic body code⁴.
+> 4. During initialization code execution, EXTCODESIZE on the address should return zero [...]
+
+### Hack
+1. gateOne: similar to the gateOne of [Level 13 - Gatekeeper One](#GatekeeperOne) or to the hack of [Level 4 - Telephone](#Telephone)
+2. gateTwo: call the `enter` function **during contract initialization**, i.e from within `constructor` to ensure `EXTCODESIZE = 0`
+3. gateThree
+	- `uint64(bytes8(keccak256(abi.encodePacked(msg.sender)))) ^ uint64(_gateKey)` noted `a ^ b` means `a XOR b`
+	- `uint64(0) - 1`: underflow, this is equals to `uint64(1)`  
+So we need to take `_gatekey = ~a` (Bitwise NOT) to ensure that the XOR product of each bit of `a` and `b` will be 1.
+
+### Takeaways
+During contract initialization, the contract has no intrinsic body code and its `extcodesize` is 0.
+## <a name='NaughtCoin'></a>Level 15 - Naughtcoin
+**Target: transfer your tokens to another address.**
+### Weakness
+`NaughCoin` inherits from the [ERC20](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol) contract.
+Looking at this contract, we notice that `transfer()` is not the only function to transfer tokens.  
+Indeed `transferFrom(address sender, address recipient, uint256 amount)` can be used instead: provided that a 3rd user (`spender`) was allowed beforehand by the `owner` of the tokens to spend a given `amount` of the total `owner`'s balance, `spender` can transfer `amount`  to `recipient` in the name of `owner`.  
+Successfully executing `transferFrom` requires the caller to have allowance for `sender`'s tokens of at least `amount`. The allowance can be set with the `approve` or `increaseAllowance` functions inherited from ERC20.
+### Concepts: [ERC20 token contract](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol)
+The ERC20 token contract is related to the [EIP 20 - ERC20 token standard](https://eips.ethereum.org/EIPS/eip-20). It is the most widespread token standard for fungible assets.  
+>Any one token is exactly equal to any other token; no tokens have special rights or behavior associated with them. This makes ERC20 tokens useful for things like a medium of exchange currency, voting rights, staking, and more.
+
+### Hack
+#### Architecture
+`transferFrom` calls `_transfer` and `_approve`.  `_approve` calls `allowance` and checks whether the caller was allowed to spend the `amount` by `sender`.
+
+![architecture diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/drawio/naughtCoinArchitecture.png)
+
+#### Workflow
+We want to set the player's allowance for the attack contract. For this we need to call`approve()` which calls `_approve(msg.sender, spender, amount)`. In this call we need `msg.sender == player`, so we can't call `victim.approve()` from the attacker contract. If we would, then `msg.sender == attackerContractAddress`. This would set the attack contract's allowance instead of the player's one.
+Finally we let the attacker call `transferFrom()` to transfer to itself the player's tokens.
+
+![Hack workflow diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/drawio/naughtCoinHack.png)
+
+### Security Takeaways
+Get familiar with contracts you didn't write, especially with imported and inherited contracts. Check how they implement authorization controls.
 
 ## Credit
 [Nicole Zhu](https://medium.com/@nicolezhu).  
