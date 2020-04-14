@@ -463,7 +463,7 @@ So we need to take `_gatekey = ~a` (Bitwise NOT) to ensure that the XOR product 
 ### Takeaways
 During contract initialization, the contract has no intrinsic body code and its `extcodesize` is 0.
 ## <a name='NaughtCoin'></a>Level 15 - Naughtcoin
-**Target: transfer your tokens to another address.**
+**Target: transfer your [naughtcoins](./contracts/levels/NaughtCoin.sol) to another address.**
 ### Weakness
 `NaughCoin` inherits from the [ERC20](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol) contract.
 Looking at this contract, we notice that `transfer()` is not the only function to transfer tokens.  
@@ -480,7 +480,7 @@ The ERC20 token contract is related to the [EIP 20 - ERC20 token standard](https
 ![architecture diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/drawio/naughtCoinArchitecture.png)
 
 #### Workflow
-We want to set the player's allowance for the attack contract. For this we need to call`approve()` which calls `_approve(msg.sender, spender, amount)`. In this call we need `msg.sender == player`, so we can't call `victim.approve()` from the attacker contract. If we would, then `msg.sender == attackerContractAddress`. This would set the attack contract's allowance instead of the player's one.
+We want to set the player's allowance for the attack contract. For this we need to call`approve()` which calls `_approve(msg.sender, spender, amount)`. In this call we need `msg.sender == player`, so we can't call `victim.approve()` from the attacker contract. If we would, then `msg.sender == attackerContractAddress`. This would set the attacker contract's allowance instead of the player's one. So we call `victim.approve()` directly from the player's address.
 Finally we let the attacker call `transferFrom()` to transfer to itself the player's tokens.
 
 ![Hack workflow diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/drawio/naughtCoinHack.png)
@@ -490,6 +490,6 @@ Get familiar with contracts you didn't write, especially with imported and inher
 
 ## Credit
 [Nicole Zhu](https://medium.com/@nicolezhu).  
-I couldn't solve a couple of levels myself so I cheated a bit 😅.
+I couldn't solve a couple of levels myself so I cheated a bit 😅 (especially for the [Vault](#Vault) and [Gatekeeper One](#GatekeeperOne) levels).
 Her walkthroughs are great teaching material on Solidity.
 I also reused some of the diagram images from her posts.
