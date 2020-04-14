@@ -58,14 +58,14 @@ The contract tries to create randomness by relying on blockhashes, block number 
 `blockhash(uint blockNumber) returns (bytes32)`:  hash of the given block - only works for 256 most recent blocks
 `block.number (uint)`: current block number
 ### Hack
-Deploy an [attacker contract](https://github.com/r1oga/ethernaut/blob/master/contracts/attacks/HackCoinFlip.sol):
-The attacker contract compute itself the `blockValue` by using the `block.number` and `blockhash()` global variables.
-As `FACTOR` is known, the attacker contract can next compute`coinFlip` and `side`.
-We pass the right `side` argument to the original flip function that we call from the attacker contract.
+Deploy an [attacker contract](https://github.com/r1oga/ethernaut/blob/master/contracts/attacks/HackCoinFlip.sol).
+1. Attacker contract compute the `blockValue` by using the `block.number` and `blockhash()` global variables.
+2. As `FACTOR` is known, the attacker contract can next compute`coinFlip` and `side`.
+3. Pass the right `side` argument to the original `flip` function that we call from the attacker contract.
 ### Takeaways
-There’s no true randomness on Ethereum blockchain, only "pseudo-randomness": random generators that are considered “good enough”.
-There currently isn't a native way to generate them.
-Everything used in smart contracts is publicly visible, including the local variables and state variables marked as private.
+**There’s no true randomness on Ethereum blockchain**, only "pseudo-randomness" i.e. random generators that are considered “good enough”.
+There currently isn't a native way to generate true randomness in the EVM.  
+Everything used in smart contracts is publicly visible, including the local variables and state variables marked as private.  
 Miners also have control over things like blockhashes, timestamps, and whether to include certain transactions - which allows them to bias these values in their favor.
 ## <a name='Telephone'></a>Level 4 - Telephone
 **Target: claim ownership of the [contract](./contracts/levels/Telephone.sol).**
@@ -86,19 +86,21 @@ In the situation where a user call a function in contract 1, that will call func
 Deploy an attacker contract.
 Call the `changeOwner` function of the original contract from the attacker contract to ensure `tx.origin != msg.sender` and pass the conditional requirement.
 ### Takeaways
-[Don't use `tx.origin`](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#tx-origin)
+[Don't use `tx.origin`](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#tx-origin).
 ## <a name='Fallback'></a>Level 5 - Token
 **Target: You are given 20 tokens to start with and you will beat the [level](./contracts/levels/Token.sol)
 if you somehow manage to get your hands on any additional tokens. Preferably a very large amount of tokens.**
 ### Weakness
 An sum operation is performed but overflow isn't checked for.
 ### Solidity Concepts: bits storage, [underflow/overflow](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#two-s-complement-underflows-overflows)
-Ethereum’s smart contract storage slot are each 256 bits, or 32 bytes. Solidity supports both signed integers, and unsigned integers uint of up to 256 bits.
+Ethereum’s smart contract storage slots are each 256 bits, or 32 bytes.  
+Solidity supports both signed integers, and unsigned integers `uint` of up to 256 bits.  
 However *as in many programming languages, Solidity’s integer types are not actually integers. They resemble integers when the values are small, but behave differently if the numbers are larger. For example, the following is true: uint8(255) + uint8(1) == 0. This situation is called an overflow. It occurs when an operation is performed that requires a fixed size variable to store a number (or piece of data) that is outside the range of the variable’s data type. An underflow is the converse situation: uint8(0) - uint8(1) == 255.*
 ![over/underflow image](https://miro.medium.com/max/1400/1*xAYyHOxwWcMUU5ycSbCp8Q.jpeg)
 
 ### Hack
-Provoke the overflow by transferring 21 tokens to the contract.
+Provoke the overflow by transferring 21 tokens to the contract.  
+Reducing the player's balance will indeed overflow: `20 - 21 -> overflow`
 ### Takeaway
 Check for over/underflow manually:
 ```
@@ -284,11 +286,11 @@ Especially by using `call()`, gas is forwarded, so the effect would be to reente
 6. Withdraw `remaining`: call `reentrance.withdraw(remaining)` from attacker contract
 
 ### Takeaways
-To protect smart contracts against reentrancy attacks, it used to be recommended to use `transfer()`  instead of `send` or `call` as it limits the gas forwarded. However gas costs are subject to change. Especially with [EIP 1884](https://eips.ethereum.org/EIPS/eip-1884) gas price changed.
-**So smart contracts logic should not depend on gas costs as  it can potentially break contracts.**
-Therefore `transfer`  is then no longer recommended. [Source 1](https://diligence.consensys.net/blog/2019/09/stop-using-soliditys-transfer-now/) [Source 2](https://forum.openzeppelin.com/t/reentrancy-after-istanbul/1742)
-Use `call` instead. As it forwards all the gas, execution of your smart contract won't break.
-But if we use `call` and don't limit gas anymore to prevent ourselves from errors caused by running out of gas, we are then exposed to reentrancy attacks, aren't we?!
+To protect smart contracts against re-entrancy attacks, it used to be recommended to use `transfer()`  instead of `send` or `call` as it limits the gas forwarded. However gas costs are subject to change. Especially with [EIP 1884](https://eips.ethereum.org/EIPS/eip-1884) gas price changed.  
+**So smart contracts logic should not depend on gas costs as  it can potentially break contracts.**  
+`transfer` does depend on gas costs (forwards 2300 gas stipend, not adjustable), therefore it is no longer recommended: [Source 1](https://diligence.consensys.net/blog/2019/09/stop-using-soliditys-transfer-now/) [Source 2](https://forum.openzeppelin.com/t/reentrancy-after-istanbul/1742)  
+Use `call` instead. As it forwards all the gas, execution of smart contracts won't break.
+But if we use `call` and don't limit gas anymore to prevent ourselves from errors caused by running out of gas, we are then exposed to re-entrancy attacks, aren't we?!
 This is why one must:
 - **Respect the [check-effect-interaction pattern](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#use-the-checks-effects-interactions-pattern).**
 	1. Perform checks
@@ -300,10 +302,10 @@ This is why one must:
 	3. Interact with other contracts or addresses
 		- external contract function calls
 		- send ethers ...
-- or use a **use a reentrancy guard: a modifier that checks for the value of a `locked` bool**
+- or use a **use a re-entrancy guard: a modifier that checks for the value of a `locked` bool**
 
 ## Credit
 [Nicole Zhu](https://medium.com/@nicolezhu).  
-I couldn't solve a couple of levels myself and I had to cheat 😅.
-Her walkthroughs are great teaching materials on Solidity.
+I couldn't solve a couple of levels myself so I cheated a bit 😅.
+Her walkthroughs are great teaching material on Solidity.
 I also reused some of the diagram images from her posts.
