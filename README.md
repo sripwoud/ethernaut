@@ -292,7 +292,7 @@ Similarly to the attack in the [level 7](#level7), when sending directly funds t
 The fallback could "reenter" in the function that triggered it.
 If the check effect interaction pattern is not followed, one could withdraw all the funds of a contract: e.g if a mapping that lists the users' balance is updated only at the end at the function!
 ### Solidity Concepts: "reenter",  calling back the contract that initiated the transaction and execute the same function again.
-Check also the differences between `call`, `send` and `transfer` seed in [level 7](#level7).
+Check also the differences between `call`, `send` and `transfer` seen in [level 7](#level7).
 Especially by using `call()`, gas is forwarded, so the effect would be to reenter multiple times until the gas is exhausted.
 ### Hack
 1. Deploy an attacker contract
@@ -327,7 +327,7 @@ This is why one must:
 The `Elevator` never implements the `isLastFloor()` function from the `Building` interface. An attacker can create a contract that implements this function as it pleases him.
 ### Solidity Concepts: [interfaces](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#interfaces) & [inheritance](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#inheritance)
 >Interfaces are similar to abstract contracts, but they cannot have any functions implemented.
-Contracts need to be marked as[abstract](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#abstract-contracts) when at least one of their functions is not implemented.
+Contracts need to be marked as [abstract](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#abstract-contracts) when at least one of their functions is not implemented.
 
 **Contract Interfaces specifies the WHAT but not the HOW.**
 Interfaces allow different contract classes to talk to each other.
