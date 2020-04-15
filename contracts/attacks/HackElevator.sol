@@ -1,12 +1,6 @@
 pragma solidity ^0.5;
 
-contract Elevator {
-  function goTo(uint floor) public;
-}
-
-interface Building {
-  function isLastFloor(uint) external returns (bool);
-}
+import '../levels/Elevator.sol';
 
 contract HackBuilding is Building {
   Elevator internal victim;
