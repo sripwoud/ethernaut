@@ -477,13 +477,13 @@ The ERC20 token contract is related to the [EIP 20 - ERC20 token standard](https
 #### Architecture
 `transferFrom` calls `_transfer` and `_approve`.  `_approve` calls `allowance` and checks whether the caller was allowed to spend the `amount` by `sender`.
 
-![architecture diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/drawio/naughtCoinArchitecture.png)
+![architecture diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/naughtCoinArchitecture.png)
 
 #### Workflow
 We want to set the player's allowance for the attack contract. For this we need to call`approve()` which calls `_approve(msg.sender, spender, amount)`. In this call we need `msg.sender == player`, so we can't call `victim.approve()` from the attacker contract. If we would, then `msg.sender == attackerContractAddress`. This would set the attacker contract's allowance instead of the player's one. So we call `victim.approve()` directly from the player's address.
 Finally we let the attacker call `transferFrom()` to transfer to itself the player's tokens.
 
-![Hack workflow diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/drawio/naughtCoinHack.png)
+![Hack workflow diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/naughtCoinHack.png)
 
 ### Security Takeaways
 Get familiar with contracts you didn't write, especially with imported and inherited contracts. Check how they implement authorization controls.
