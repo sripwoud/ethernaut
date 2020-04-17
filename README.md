@@ -19,6 +19,9 @@
 [Level 16: Preservation](#Preservation)  
 [Level 17: Recovery](#Recovery)  
 [Level 18: Magic Number](#MagicNumber)  
+[Level 19: Denial](#Denial)  
+[Level 20: Alien Codex](#AlienCodex)  
+[Level 21: Shop](#Shop)  
 
 ## Requirements
 - [Infura](https://infura.io/) project ID on Ropsten network
