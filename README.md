@@ -492,8 +492,8 @@ Finally we let the attacker call `transferFrom()` to transfer to itself the play
 Get familiar with contracts you didn't write, especially with imported and inherited contracts. Check how they implement authorization controls.
 ## <a name='Preservation'></a>Level 16 - Preservation
 **Target**
-> A contract creator has built a very simple token factory contract. Anyone can create new tokens with ease. After deploying the first token contract, the creator sent 0.5 ether to obtain more tokens. They have since lost the contract address.
-This level will be completed if you can recover (or remove) the 0.5 ether from the lost contract address.
+> This [contract](./contracts/levels/Preservation.sol) utilizes a library to store two different times for two different timezones. The constructor creates two instances of the library for each time to be stored.
+The goal of this level is for you to claim ownership of the instance you are given.
 
 ### Weakness
 1. `Preservation` uses Libraries:
@@ -513,7 +513,7 @@ As libraries use `delegatecall`, they can modify the storage of `Preservation`.
 ### Takeaways
 ## <a name='Recovery'></a>Level 17 - Recovery
 **Target**
-> A contract creator has built a very simple token factory contract. Anyone can create new tokens with ease. After deploying the first token contract, the creator sent 0.5 ether to obtain more tokens. They have since lost the contract address.
+> A contract creator has built a very simple token factory [contract](./contracts/levels/Recovery.sol). Anyone can create new tokens with ease. After deploying the first token contract, the creator sent 0.5 ether to obtain more tokens. They have since lost the contract address.
 This level will be completed if you can recover (or remove) the 0.5 ether from the lost contract address.
 
 ### Weakness
@@ -522,7 +522,7 @@ The generation of contract addresses are pre-deterministic and can be guessed in
 - [selfdestruct](https://solidity.readthedocs.io/en/v0.6.2/units-and-global-variables.html#contract-related): see [Level 7 - Force]
 Sefdestruct is a method tha can be used to send ETH to a recipient upon destruction of a contract.
 - [encodeFunctionCall](https://web3js.readthedocs.io/en/v1.2.6/web3-eth-abi.html#encodefunctioncall)
-At [Level 6 - Delegation](https://listed.to/@r1oga/13709/ethernaut-levels-4-to-6#Delegation), we learnt how to make function call even though we don't know the ABI: by sending a raw transaction to a contract and passing the function signature into the data argument. More convenienttly, this can be done with the [encodeFunctionCall](https://web3js.readthedocs.io/en/v1.2.6/web3-eth-abi.html#encodefunctioncall) function of web3.js: `web3.eth.abi.encodeFunctionCall(jsonInterface, parameters)`
+At [Level 6 - Delegation](#Delegation), we learnt how to make function call even though we don't know the ABI: by sending a raw transaction to a contract and passing the function signature into the data argument. More convenienttly, this can be done with the [encodeFunctionCall](https://web3js.readthedocs.io/en/v1.2.6/web3-eth-abi.html#encodefunctioncall) function of web3.js: `web3.eth.abi.encodeFunctionCall(jsonInterface, parameters)`
 - generation of contract addresses, from the [Etherem yellow paper](https://ethereum.github.io/yellowpaper/paper.pdf), section 7 - contract creation:
 
 ![Ethereum Yellow Paper screenshot - contract address generation](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/contractAddressGeneration.png)
@@ -547,7 +547,7 @@ An interesting blog [post](https://swende.se/blog/Ethereum_quirks_and_vulns.html
 
 ## <a name='MagicNumber'></a>Level 18 - MagicNumber
 **Target**
-> provide the Ethernaut with a "Solver", a contract that responds to "whatIsTheMeaningOfLife()" with the right number.
+> provide the Ethernaut with a "Solver", a [contract](./contracts/levels/MagicNum.sol) that responds to "whatIsTheMeaningOfLife()" with the right number.
 
 ### Solidity Concepts
 #### Contract creation bytecode
@@ -624,6 +624,74 @@ Having an understanding of the EVM at a lower level, especially understanding ho
 - possibilities to finely optimize contract runtime or creation code
 
 However both operations, assembling OPCODES into bytecode or disassembling bytecode into OPCODES, are cumbersome and tricky to manually  perform without mistakes.  So for efficiency and security reasons, developers are better off leaving it to compilers, writing solidity code and working with ABIs!
+>The Ethernaut is a Web3/Solidity based wargame inspired from [overthewire.org](https://overthewire.org/wargames/), played in the Ethereum Virtual Machine. Each level is a smart contract that needs to be 'hacked'.
+
+## <a name='Denial'></a>Level 19 - Denial
+**Target**
+> This is a simple wallet that drips funds over time. You can withdraw the funds slowly by becoming a withdrawing partner.
+If you can deny the owner from withdrawing funds when they call withdraw() (whilst the [contract](./contracts/levels/Denial.sol) still has funds) you will win this level.
+
+### Weakness
+The `withdraw` function uses `call` to send ETH to an unknown address. This poses two threats:
+1. Reentrancy (see [Level 10 - Reentrancy](#Reentrancy): the recipient can implement a malicious fallback that will call back ('reenter') the `withdraw` function
+2. Out Of Gas (OOG) error: `call` forwards all gas. The recipient may consume it all to prevent the execution of the following instructions.
+### Solidity Concepts: [error handling]()
+
+|expression|syntax|effect|OPCODE||
+|--|--|--|--|--|
+|throw|`if (condition) { throw; }`|reverts all state changes and deplete gas|version<0.4.1: INVALID OPCODE  - 0xfe, after:  REVERT- 0xfd|deprecated in version 0.4.13 and removed in version 0.5.0
+|assert|`assert(condition);`|reverts all state changes and depletes all gas|INVALID OPCODE - 0xfe
+|revert|`if (condition) { revert(value) }`|reverts all state changes, allows returning a value, refunds remaining gas to caller|REVERT - 0xfd
+|require|`require(condition, "comment")`|reverts all state changes, allows returning a value, refunds remaining gas to calle|REVERT - 0xfd
+
+So the main difference is that `assert` depletes all gas while `revert` and `require` don't. `require` is a less verbose version of `revert`.
+When to use which error handling method? According to the [solidity documentation](https://solidity.readthedocs.io/en/latest/control-structures.html#id4)
+> The assert function should only be used to test for internal errors, and to check invariants. Properly functioning code should never reach a failing assert statement; if this happens there is a bug in your contract which you should fix.
+> The require function should be used to ensure valid conditions that cannot be detected until execution time. This includes conditions on inputs or return values from calls to external contracts.
+
+### Hack
+We want to make the `owner.transfer(amountToSend);` instruction fail right after the `partner.call.value(amountToSend)("");` instruction. As `call` forwards all gas, we will cause an Out Of Gas error.
+1. Deploy a malicious contract and set it as withdraw partner with `setWithdrawPartner`
+2. Cause an Out Of Gas Error by implementing a malicious fallback (that receive the ETH sent by the `partner.call.value(amountToSend)("")` instruction)
+	- Option 1: reenter in `denial.withdraw()`
+	- Option 2: `assert` a false condition
+
+### Takeaways
+See [Level 10 - Reentrancy](#Reentrancy) takeaways.
+## <a name='AlienCodex'></a>Level 20 - Alien Codex
+**Target: claim ownership of the [contract](./contracts/levels/AlienCodex.sol)**
+### Weakness
+### Solidity Concept
+### Hack
+### Takeaways
+
+## <a name='Shop'></a>Level 21 - Shop
+**Target: get the item from the [shop](./contracts/levels/Shop.sol) for less than the price asked.**
+### Weakness
+Like for the [Level 11 - Elevator](#Elevator), `Shop` never implements the `price()` function from the `Buyer` interface. An attacker can create a contract that implements its own version of this function.
+
+### Solidity Concepts
+- [Interfaces](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#interfaces)
+- [Inheritance](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#inheritance)
+- [External function call with `gas()` option](https://solidity.readthedocs.io/en/v0.5.15/control-structures.html#external-function-calls)
+> When calling functions of other contracts, you can specify the amount of Wei or gas sent with the call with the special options .value() and .gas(), respectively.
+
+- Gas cost to modify storage
+![Ethereum Yellow Paper screenshot - Fee Schedule](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/feeSchedule.png)
+
+#### Hack
+`buy()` is calling `price()` twice:
+1. In the conditional check: the price returned must be higher than 100 to pass
+2. To update the price: here is the opportunity to return a value lower than 100.
+
+So we need to implement a malicious `price` function that:
+- returns a value higher than 100 on its first call
+- returns a value lower than 100 on its second call
+- costs less than 3000 gas to execute. So we can't write in storate. We will read `isSold` instead to perform a conditinal check: `isSold() ? 1: 101`
+
+### Security Takeaways
+- Don't let interface function unimplemented.
+- It is unsafe to approve some action by double calling even the same view function.
 
 ## Credit
 [Nicole Zhu](https://medium.com/@nicolezhu).  
