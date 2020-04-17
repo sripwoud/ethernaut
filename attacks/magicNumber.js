@@ -7,15 +7,15 @@ const instance = require('../prompt.js');
     console.log('Load MagicNumber contract instance.')
     const victim = loader.web3.fromArtifact('MagicNum', instance)
 
-    console.log('Load Solver Contract')
-    const solver = loader.web3.fromArtifact('Solver')
+    console.log('Deploy Solver contract with raw EVM bytecode...')
+    const bytecode = '0x69602a60005260206000f3600052600a6016f3'
+    // see https://github.com/r1oga/ethernaut#hack-17 for explainations about where bytecode comes from
+    const { contractAddress } = await web3.eth.sendTransaction({ data: bytecode })
 
-    console.log('Deploy Solver contract')
-    const gasLimit = await web3.eth.getBlock('latest').gasLimit
-    const { options: { address } } = await solver.deploy().send({ gas: 8000000 })
+    console.log(`Deployed Solver contract address is ${contractAddress}`)
 
     console.log('Execute setSolver(), passing Solver address as argument...')
-    await victim.methods.setSolver(address).send()
+    await victim.methods.setSolver(contractAddress).send()
 
     console.log('Done. Submit yor instance.')
   } catch (err) {

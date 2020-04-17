@@ -16,6 +16,9 @@
 [Level 13: Gatekeeper One](#GatekeeperOne)  
 [Level 14: Gatekeeper Two](#GatekeeperTwo)  
 [Level 15: Naught Coin](#NaughtCoin)  
+[Level 16: Preservation](#Preservation)  
+[Level 17: Recovery](#Recovery)  
+[Level 18: Magic Number](#MagicNumber)  
 
 ## Requirements
 - [Infura](https://infura.io/) project ID on Ropsten network
@@ -487,9 +490,145 @@ Finally we let the attacker call `transferFrom()` to transfer to itself the play
 
 ### Security Takeaways
 Get familiar with contracts you didn't write, especially with imported and inherited contracts. Check how they implement authorization controls.
+## <a name='Preservation'></a>Level 16 - Preservation
+**Target**
+> A contract creator has built a very simple token factory contract. Anyone can create new tokens with ease. After deploying the first token contract, the creator sent 0.5 ether to obtain more tokens. They have since lost the contract address.
+This level will be completed if you can recover (or remove) the 0.5 ether from the lost contract address.
+
+### Weakness
+1. `Preservation` uses Libraries:
+Libraries use `delegatecall`s. [Level 6 -Delegation] taught us that using `delegatecall` is risky as it allows the called contract to modifiy the storage of the calling contract.
+2. Storage layouts of `Preservation` and `LibraryContract` don't match:
+Calling the library won't modifiy the expected `storedTime` variable.
+### Solidity Concept: [libraries](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#libraries)
+> Libraries are similar to contracts, but their purpose is that they are deployed only once at a specific address and their code is reused using the DELEGATECALL (CALLCODE until Homestead) feature of the EVM. This means that if library functions are called, their code is executed in the context of the calling contract, i.e. this points to the calling contract, and especially the storage from the calling contract can be accessed.
+
+So Libraries are a particular case where functions are on purpose called with `delegatecall` because preserving context is desired.
+### Hack
+As libraries use `delegatecall`, they can modify the storage of `Preservation`.
+`LibraryContract` can modify the first slot (index 0) of `Preservation`, which is `address public timeZone1Library`. So we can "set" `timeZone1Library` by calling `setFirstTime(_timeStamp)`. The `uint _timeStamp` passed will converted to an `address` type though. It means we can cause `setFirstTime()` to execute a `delegatecall` from a library address different from the one defined at initialization. We need to define this malicious library so that its `setTime` function modifies the slot where `owner` is stored: slot of index 2.
+
+![preservation hack workflow](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/preservationHack.png)
+
+### Takeaways
+## <a name='Recovery'></a>Level 17 - Recovery
+**Target**
+> A contract creator has built a very simple token factory contract. Anyone can create new tokens with ease. After deploying the first token contract, the creator sent 0.5 ether to obtain more tokens. They have since lost the contract address.
+This level will be completed if you can recover (or remove) the 0.5 ether from the lost contract address.
+
+### Weakness
+The generation of contract addresses are pre-deterministic and can be guessed in advance.
+### Solidity Concepts: selfdestruct, encodeFunctionCall, & generation of contract addresses
+- [selfdestruct](https://solidity.readthedocs.io/en/v0.6.2/units-and-global-variables.html#contract-related): see [Level 7 - Force]
+Sefdestruct is a method tha can be used to send ETH to a recipient upon destruction of a contract.
+- [encodeFunctionCall](https://web3js.readthedocs.io/en/v1.2.6/web3-eth-abi.html#encodefunctioncall)
+At [Level 6 - Delegation](https://listed.to/@r1oga/13709/ethernaut-levels-4-to-6#Delegation), we learnt how to make function call even though we don't know the ABI: by sending a raw transaction to a contract and passing the function signature into the data argument. More convenienttly, this can be done with the [encodeFunctionCall](https://web3js.readthedocs.io/en/v1.2.6/web3-eth-abi.html#encodefunctioncall) function of web3.js: `web3.eth.abi.encodeFunctionCall(jsonInterface, parameters)`
+- generation of contract addresses, from the [Etherem yellow paper](https://ethereum.github.io/yellowpaper/paper.pdf), section 7 - contract creation:
+
+![Ethereum Yellow Paper screenshot - contract address generation](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/contractAddressGeneration.png)
+
+So in JavaScript, using the [web3.js](https://github.com/ethereum/web3.js/) and [rlp](https://github.com/ethereumjs/rlp) libraries, one can compute the contract address generated upon creation as follows.
+```
+// Rightmost 160 digits means rightmost 160 / 4 = 40 hexadecimals characters
+contractAddress = '0x' + web3.utils.sha3(RLP.encode([creatorAddress, nonce])).slice(-40))
+```
+### Hack
+1. Instantiate level. This will create 2 contracts:
+	- nonce 0: `Recovery` contract
+	- nonce 1: `SimpleToken` contract
+2. Compute the `address` of the `SimpleToken`:
+	- sender = instance address
+	- nonce = 1
+3.  Use `encodeFunctionCall` to call the `destruct` function of `SimpleToken` instance at `address`.
+### Takeaways
+> Contract addresses are deterministic and are calculated by keccack256(rlp([address, nonce])) where the address is the address of the contract (or ethereum address that created the transaction) and nonce is the number of contracts the spawning contract has created (or the transaction nonce, for regular transactions).
+Because of this, one can send ether to a pre-determined address (which has no private key) and later create a contract at that address which recovers the ether. This is a non-intuitive and somewhat secretive way to (dangerously) store ether without holding a private key.
+An interesting blog [post](https://swende.se/blog/Ethereum_quirks_and_vulns.html) by Martin Swende details potential use cases of this.
+
+## <a name='MagicNumber'></a>Level 18 - MagicNumber
+**Target**
+> provide the Ethernaut with a "Solver", a contract that responds to "whatIsTheMeaningOfLife()" with the right number.
+
+### Solidity Concepts
+#### Contract creation bytecode
+Smart contracts run on the Ethereum Virtual Machine (EVM). The EVM understands smart contracts as bytecode. Bytecode is a sequence of hexadecimal characters:
+`0x6080604052348015600f57600080fd5b5069602a60005260206000f3600052600a6016f3fe`.
+Developers on the other hand, write and read them using a more human readable format: solidity files.  
+The solidity **compiler** digests `.sol` files to generate:
+- contract creation bytecode: this is the smart contract format that the EVM understands
+- assembly code: this is the bytecode as a sequence of **opcodes**. From a human point of view, it is less readable that Solidity code but more readable than bytecode.
+- Application Binary Interface (ABI): this is like a customized interpret in a JSON format that tells applications (e.g a Dapp making function calls using web3.js) how to communicate with a specific deployed smart contract. It translates the application language (JavaScript) into bytecode that the  EVM can understand and execute.
+
+Contract creation bytecode contain 2 different pieces of bytecode:
+- **creation** code: only executed at deployment. It tells the EVM to run the constructor to initialize the contract and to store the remaining **runtime** bytecode.
+- **runtime** code: this is what lives on the blockchain at what Dapps, users will interact with.
+
+![contract creation workflow diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/contractCreationWorkflow.png)
+
+#### EVM = [Stack Machine](https://en.wikipedia.org/wiki/Stack_machine)
+As a stack machine, the EVM functions according to the **Last In First Out** principle: the last item entered in memory will be the first one to be consumed for the next operation.
+So an operation such as ` 1 + 2 * 3` will be written `3 2 * 1 +` and will be executed by a stack machine as follows:
+
+|Stack Level|Step 0|Step 1|Step 2|Step 3|Step 4|Step 5|Step 6|
+|--|--|--|--|--|--|--|--|
+|0|3|2| * |6|1|+|7|
+|1||3|2||6|1
+|2|||3|||6
+
+In addition to its **stack** component, the EVM has **memory**, which is like RAM in the sense that it is cleared at the end of each message call, and **storage**, which corresponds to data persisted between message calls.
+#### OPCODES
+How do we control the EVM? How do we tell it what to execute?  
+We have to give it a sequence of instructions in the form of OPCODES. An OPCODE can only push or consume items from the EVM’s stack, memory, or storage belonging to the contract.  
+Each OPCODE takes one byte.  
+Each OPCODE has a corresponding hexadecimal value: see the opcode values mapping [here](https://github.com/ethereum/py-evm/blob/master/eth/vm/opcode_values.py) (from pyevm) or in the [Ethereum Yellow Paper - appendix H](http://gavwood.com/paper.pdf).  
+So "assembling" the OPCODES hexadecimal values together means reconstructing the bytecode.  
+Splitting the bytecode into OPCODES bytes chunks means "disassembling" it.  
+
+For a more detailed guide on how to deconstruct a solidity code, check this [post](https://blog.openzeppelin.com/deconstructing-a-solidity-contract-part-i-introduction-832efd2d7737/) by Alejandro Santander in collaboration with Leo Arias.
+### Hack
+1. Runtime code
+
+	|# (bytes)|OPCODE|Stack (left to right = top to bottom)|Meaning|bytecode|
+	|--|--|--|--|--|
+	|00|PUSH1 2a||push  2a (hexadecimal) = 42 (decimal) to the stack|602a
+	|02|PUSH1 00|2a|push 00 to the stack|6000|
+	|05|MSTORE|00, 2a|`mstore(0, 2a)`, store 2a = 42 at memory position 0|52
+	|06|PUSH1 20||push 20 (hexadecimal) = 32 (decimal) to the stack (for 32 bytes of data)|6020
+	|08|PUSH1 00|20|push 00 to the stack|6000
+	|10|RETURN|00, 20|`return(memory position, number of bytes)`, return 32 bytes stored in memory position 0|f3
+  The assembly of these 10 bytes of OPCODES results in the following bytecode: `602a60005260206000f3`
+
+2. Creation code
+	We want to excute the following:
+	- `mstore(0, 0x602a60005260206000f3)`: store the 10 bytes long bytecode in memory at position 0.  
+	This will store `602a60005260206000f3` padded with 22 zeroes on the left to form a 32 bytes long bytestring.
+	- `return(0x16, 0x0a)`: starting from byte 22, return the 10 bytes long runtime bytecode.
+
+	|# (bytes)|OPCODE|Stack (left to right = top to bottom)|Meaning|bytecode|
+	|--|--|--|--|--|
+	|00|PUSH10 602a60005260206000f3||push the 10 bytes of runtime bytecode to the stack|69602a60005260206000f3|
+	|03|PUSH 00|602a60005260206000f3|push 0 to the stack|6000
+	|05|MSTORE|0, 602a60005260206000f3|`mstore(0, 0x602a60005260206000f3)`0|52
+	|06|PUSH a||push a = 10 (decimal) to the stack|600a
+	|08|PUSH 16|a|push 16 = 22 (decimal) to the stack|6016
+	|10|RETURN|16, a|`return(0x16, 0x0a)`|f3
+
+3. The complete contract creation bytecode is then `69602a60005260206000f3600052600a6016f3`
+4. Deploy the contract with `web3.eth.sendTransaction({ data: '0x69602a60005260206000f3600052600a6016f3' })`, which returns a Promise. The deployed contract address is the value of the `contractAddress` property of the object returned when the Promise resolves.
+5. Pass the address of the deployed solver contract to the `setSolver` function of the `MagicNumber` contract.
+
+
+### Takeaways
+Having an understanding of the EVM at a lower level, especially understanding how contracts are created and how bytecode can be dis/assembled from/to OPCODES is benefetial to smart contract developers in several ways:
+- better debugging
+- possibilities to finely optimize contract runtime or creation code
+
+However both operations, assembling OPCODES into bytecode or disassembling bytecode into OPCODES, are cumbersome and tricky to manually  perform without mistakes.  So for efficiency and security reasons, developers are better off leaving it to compilers, writing solidity code and working with ABIs!
 
 ## Credit
 [Nicole Zhu](https://medium.com/@nicolezhu).  
 I couldn't solve a couple of levels myself so I cheated a bit 😅 (especially for the [Vault](#Vault) and [Gatekeeper One](#GatekeeperOne) levels).
 Her walkthroughs are great teaching material on Solidity.
 I also reused some of the diagram images from her posts.
+
+[Deconstructing a Solidity Contract —Part I: Introduction](https://blog.openzeppelin.com/deconstructing-a-solidity-contract-part-i-introduction-832efd2d7737/) by Alejandro Santander from OpenZeppelin in collaboration with Leo Arias.
