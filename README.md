@@ -727,7 +727,7 @@ So we need to implement a malicious `price` function that:
 
 ## Credit
 [Nicole Zhu](https://medium.com/@nicolezhu).  
-I couldn't solve a couple of levels myself so I cheated a bit 😅 (especially for the [Vault](#Vault) and [Gatekeeper One](#GatekeeperOne) levels).
+I couldn't solve a couple of levels myself so I cheated a bit 😅  (especially for the [Vault](#Vault) and [Gatekeeper One](#GatekeeperOne) levels).
 Her walkthroughs are great teaching material on Solidity.
 I also reused some of the diagram images from her posts.
 
