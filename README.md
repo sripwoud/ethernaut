@@ -38,7 +38,7 @@
 ## <a name='Fallback'></a>Level 1 - Fallback
 **Target: claim ownership of the [contract](./contracts/levels/Fallback.sol) & reduce its balance to 0.**
 ### Weakness
-The contract's fallback function can owneship of the contract. The conditional requirements are not secure: any contributor can become owner after sending any value to the contract.
+The contract's fallback function can take ownership of the contract. The conditional requirements are not secure: any contributor can become owner after sending any value to the contract.
 ### Solidity concept: [fallback function](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#fallback-function)
 *A contract can have at most one fallback function, declared using fallback () external [payable] (without the function keyword). This function cannot have arguments, cannot return anything and must have external visibility. It is executed on a call to the contract if none of the other functions match the given function signature, or if no data was supplied at all and there is no receive Ether function. The fallback function always receives data, but in order to also receive Ether it must be marked payable.
 Like any function, the fallback function can execute complex operations as long as there is enough gas passed on to it.*
