@@ -294,7 +294,7 @@ Especially when transferring ETH:
 ## <a name='Reentrancy'></a>Level 10 - Re-entrancy
 **Target: steal all funds from the [contract](./contracts/levels/Renetrance.sol).**
 ### Weakness
-Similarly to the attack in the [level 7](#Force), when sending directly funds to an address, one does not now if it is an POA or a contract, and how the contract the contract will handle the funds.
+Similarly to the attack in the [level 7](#Force), when sending directly funds to an address, one does not now if it is an POA or a contract, and how the contract will handle the funds.
 The fallback could "reenter" in the function that triggered it.
 If the check effect interaction pattern is not followed, one could withdraw all the funds of a contract: e.g if a mapping that lists the users' balance is updated only at the end at the function!
 ### Solidity Concepts: "reenter",  calling back the contract that initiated the transaction and execute the same function again.
