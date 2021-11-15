@@ -135,7 +135,7 @@ Or use [OpenZeppelin's math library](https://docs.openzeppelin.com/contracts/2.x
 
 
 ## <a name='Delegation'></a>Level 6 - Delegation
-**Target: claim ownership of the [contract](./contracts/level/Delgation.sol).**
+**Target: claim ownership of the [contract](./contracts/levels/Delegation.sol).**
 ### Weakness
 The `Delegation` fallback implements a `delegatecall`.
 By sending the right `msg.data` we can trigger the function `pwn()` of the Delegate contract.
