@@ -375,7 +375,7 @@ In practice, when using e.g `getStorageAt` we get string hashes of length 64 + 2
 	|5|data[2] (32 bytes long)|
 
 The `_key` variable is slot 5.
-2. Take the first 16 bytes of the get: take the first 2 ('0x') + 2 * 16 = 34 characters of the bytestring.
+2. Take the first 16 bytes = take the first 2 ('0x') + 2 * 16 = 34 characters of the bytestring.
 
 ### Takeaways
 - Same as for [Level 8 -Vault](#Vault):
