@@ -364,15 +364,15 @@ The slots are 32 bytes long.
 **1 byte = 8 bits = 4 nibbles = 4 hexadecimal digits**.
 In practice, when using e.g `getStorageAt` we get string hashes of length 64 + 2 ('0x') = 66.
 ### Hack
-1. Analyse storage layout:
-|slot|variable|
-|--|--|
-|0|bool (1 bit long)|
-|1|ID (256 bits long)|
-|2|awkwardness (16 bytes) - denomination (8 bytes) - flattening (8 bytes)|
-|3|data[0] (32 bytes long)|
-|4|data[1] (32 bytes long)|
-|5|data[2] (32 bytes long)|
+1. Analyse storage layout:  
+	|slot|variable|
+	|--|--|
+	|0|bool (1 bit long)|
+	|1|ID (256 bits long)|
+	|2|awkwardness (16 bytes) - denomination (8 bytes) - flattening (8 bytes)|
+	|3|data[0] (32 bytes long)|
+	|4|data[1] (32 bytes long)|
+	|5|data[2] (32 bytes long)|
 
 The `_key` variable is slot 5.
 2. Take the first 16 bytes of the get: take the first 2 ('0x') + 2 * 16 = 34 characters of the bytestring.
