@@ -257,7 +257,7 @@ contract Sample {
 #### Read storage: [web3.eth.getStorageAt](https://web3js.readthedocs.io/en/v1.2.6/web3-eth.html#getstorageat)
 Knowing a contract's address and the storage slot position a variable is stored in, it is possible to read its value value using the `getStorageAt` function of web3.js.
 ## Hack
-1. Read contract to find out in slot `password` is stored in:
+1. Read contract to find out the slot `password` is stored in:
 	- `locked` bool takes 1 bit of the first slot index 0
 	- `password` is 32 bytes long. It can fit on the first slot so it goes on next slot at index 1
 2. Read storage at index 1
