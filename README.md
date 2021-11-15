@@ -504,7 +504,7 @@ Libraries use `delegatecall`s. [Level 6 -Delegation] taught us that using `deleg
 2. Storage layouts of `Preservation` and `LibraryContract` don't match:
 Calling the library won't modifiy the expected `storedTime` variable.
 ### Solidity Concept: [libraries](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#libraries)
-> Libraries are similar to contracts, but their purpose is that they are deployed only once at a specific address and their code is reused using the DELEGATECALL (CALLCODE until Homestead) feature of the EVM. This means that if library functions are called, their code is executed in the context of the calling contract, i.e. this points to the calling contract, and especially the storage from the calling contract can be accessed.
+> Libraries are similar to contracts, but their purpose is that they are deployed only once at a specific address and their code is reused using the DELEGATECALL (CALLCODE until Homestead) feature of the EVM. This means that if library functions are called, their code is executed in the context of the calling contract, i.e. `this` points to the calling contract, and especially the storage from the calling contract can be accessed.
 
 So Libraries are a particular case where functions are on purpose called with `delegatecall` because preserving context is desired.
 ### Hack
