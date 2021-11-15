@@ -464,7 +464,7 @@ From the [Ethereum yellow paper](https://ethereum.github.io/yellowpaper/paper.pd
 3. gateThree
 	- `uint64(bytes8(keccak256(abi.encodePacked(msg.sender)))) ^ uint64(_gateKey)` noted `a ^ b` means `a XOR b`
 	- `uint64(0) - 1`: underflow, this is equals to `uint64(1)`  
-So we need to take `_gatekey = ~a` (Bitwise NOT) to ensure that the XOR product of each bit of `a` and `b` will be 1.
+So we need to take `_gatekey = ~msg.sender` (Bitwise NOT) to ensure that the XOR product of each bit of `a` and `b` will be 1.
 
 ### Takeaways
 During contract initialization, the contract has no intrinsic body code and its `extcodesize` is 0.
