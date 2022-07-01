@@ -292,7 +292,7 @@ Especially when transferring ETH:
 - Prefer a ['withdraw' pattern](https://solidity.readthedocs.io/en/v0.6.2/common-patterns.html#withdrawal-from-contracts) to send ETH
 
 ## <a name='Reentrancy'></a>Level 10 - Re-entrancy
-**Target: steal all funds from the [contract](./contracts/levels/Renetrance.sol).**
+**Target: steal all funds from the [contract](./contracts/levels/Reentrance.sol).**
 ### Weakness
 Similarly to the attack in the [level 7](#Force), when sending directly funds to an address, one does not now if it is an EOA or a contract, and how the contract will handle the funds.
 The fallback could "reenter" in the function that triggered it.
