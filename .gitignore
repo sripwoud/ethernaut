@@ -1,0 +1,10 @@
+# Compiler files
+broadcast
+cache
+out
+
+# Dotenv file
+.env
+
+# JetBrains IDE
+.idea

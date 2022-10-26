@@ -1,0 +1,15 @@
+[profile.default]
+src = 'src'
+out = 'out'
+libs = ['lib']
+
+[rpc_endpoints]
+arb_goerli = "https://arbitrum-goerli.infura.io/v3/${ARB_GOERLI_API_KEY}"
+
+[fmt]
+line_length = 100
+tab_width = 2
+bracket_spacing = true
+quote_style = 'single'
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config
