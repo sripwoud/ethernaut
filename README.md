@@ -3,8 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 3: Coin Flip](#CoinFlip)  
-[Level 4: Telephone](#Telephone)  
 [Level 5: Token](#Token)  
 [Level 6: Delegation](#Delegation)  
 [Level 7: Force](#Force)  
@@ -36,29 +34,10 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    forge test --mc LevelName
    ```
 
-## <a name='Telephone'></a>Level 4 - Telephone
-**Target: claim ownership of the [contract](./lib/levels/Telephone.sol).**
-### Weakness
-A conditional requirements uses `tx.origin`
-### Solidity Concepts: [tx.origin vs msg.sender](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#tx-origin)
-- `tx.origin (address payable)`:  sender of the transaction (full call chain)
-- `msg.sender (address payable)`: sender of the message (current call)
-
-In the situation where a user call a function in contract 1, that will call a function of contract 2:
-
-|              | at execution contract 1 | at execution in contract 2 |
-|--------------|-------------------------|----------------------------|
-| `msg.sender` | user's address          | contract1's address        |
-| `tx.origin`  | user's address          | user's address             |
-
-### Hack
-Deploy an attacker contract.
-Call the `changeOwner` function of the original contract from the attacker contract to ensure `tx.origin != msg.sender` and pass the conditional requirement.
-### Takeaways
-[Don't use `tx.origin`](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#tx-origin).
 ## <a name='Token'></a>Level 5 - Token
 **Target: You are given 20 tokens to start with and you will beat the [level](./lib/levels/Token.sol)
 if you somehow manage to get your hands on any additional tokens. Preferably a very large amount of tokens.**
+
 ### Weakness
 An sum operation is performed but overflow isn't checked for.
 ### Solidity Concepts: bits storage, [underflow/overflow](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#two-s-complement-underflows-overflows)
