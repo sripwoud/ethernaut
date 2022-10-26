@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 5: Token](#Token)  
 [Level 6: Delegation](#Delegation)  
 [Level 7: Force](#Force)  
 [Level 8: Vault](#Vault)  
@@ -33,31 +32,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    ```commandline
    forge test --mc LevelName
    ```
-
-## <a name='Token'></a>Level 5 - Token
-**Target: You are given 20 tokens to start with and you will beat the [level](./lib/levels/Token.sol)
-if you somehow manage to get your hands on any additional tokens. Preferably a very large amount of tokens.**
-
-### Weakness
-An sum operation is performed but overflow isn't checked for.
-### Solidity Concepts: bits storage, [underflow/overflow](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#two-s-complement-underflows-overflows)
-Ethereum’s smart contract storage slots are each 256 bits, or 32 bytes.  
-Solidity supports both signed integers, and unsigned integers `uint` of up to 256 bits.  
-However *as in many programming languages, Solidity’s integer types are not actually integers. They resemble integers when the values are small, but behave differently if the numbers are larger. For example, the following is true: uint8(255) + uint8(1) == 0. This situation is called an overflow. It occurs when an operation is performed that requires a fixed size variable to store a number (or piece of data) that is outside the range of the variable’s data type. An underflow is the converse situation: uint8(0) - uint8(1) == 255.*
-![over/underflow image](https://miro.medium.com/max/1400/1*xAYyHOxwWcMUU5ycSbCp8Q.jpeg)
-
-### Hack
-Provoke the overflow by transferring 21 tokens to the contract.  
-Reducing the player's balance will indeed overflow: `20 - 21 -> overflow`
-### Takeaway
-Check for over/underflow manually:
-```
-if(a + c > a) {
-  a = a + c;
-}
-```
-Or use [OpenZeppelin's math library](https://docs.openzeppelin.com/contracts/2.x/api/math) that automatically checks for overflows in all the mathematical operators.
-
 
 ## <a name='Delegation'></a>Level 6 - Delegation
 **Target: claim ownership of the [contract](./lib/levels/Delegation.sol).**
