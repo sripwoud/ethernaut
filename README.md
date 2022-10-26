@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 7: Force](#Force)  
 [Level 8: Vault](#Vault)  
 [Level 9: King](#King)  
 [Level 10: Re-entrancy](#Reentrancy)  
@@ -31,26 +30,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    ```commandline
    forge test --mc LevelName
    ```
-
-## <a name='Force'></a>Level 7 - Force
-**Target: make the balance of the [contract](./lib/levels/Force.sol) greater than zero.**
-### Solidity Concept: [selfdestruct](https://solidity.readthedocs.io/en/v0.6.2/units-and-global-variables.html#contract-related)
-3 methods exist to receive Ethers:
-1.  Message calls and payable functions
-	- `addr.call{value: x}('')`: returns success condition and return data, forwards all available gas, adjustable
-	- `<address payable>.transfer(uint256 amount)`: reverts on failure, forwards 2300 gas stipend, not adjustable
-	- `<address payable>.send(uint256 amount) returns (bool)`: returns false on failure, forwards 2300 gas stipend, not adjustable
-```
-function receive() payable external {}
-```
-2. contract designated as recipient for mining rewards
-3. `selfdestruct(address payable recipient)`: destroy the current contract, sending its funds to the given Address and end execution.
-
-### Hack
-As the contract to hack has no payable function to receive ether, we send ether to it by selfdestructing another contract, designating the victim contract as the recipient.
-### Takeaways
-By selfdestructing a contract, it is possible to send ether to another contract even if it doesn't have any payable functions.
-This is dangerous as it can result in losing ether: sending ETH to a contract without withdraw function, or to a removed contract.
 
 ## <a name='Vault'></a>Level 8 - Vault
 **Target: Unlock Vault [contract](./lib/levels/Vault.sol).**
