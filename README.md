@@ -38,11 +38,14 @@
 
 ## <a name='Fallback'></a>Level 1 - Fallback
 **Target: claim ownership of the [contract](./lib/levels/Fallback.sol) & reduce its balance to 0.**
+
 ### Weakness
 The contract's fallback function can take ownership of the contract. The conditional requirements are not secure: any contributor can become owner after sending any value to the contract.
+
 ### Solidity concept: [fallback function](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#fallback-function)
 *A contract can have at most one fallback function, declared using fallback () external [payable] (without the function keyword). This function cannot have arguments, cannot return anything and must have external visibility. It is executed on a call to the contract if none of the other functions match the given function signature, or if no data was supplied at all and there is no receive Ether function. The fallback function always receives data, but in order to also receive Ether it must be marked payable.
 Like any function, the fallback function can execute complex operations as long as there is enough gas passed on to it.*
+
 ### Hack
 1. Contribute
 2. Send any amount to the contract, which will trigger the fallback.
@@ -57,16 +60,20 @@ Like any function, the fallback function can execute complex operations as long 
 
 ## <a name='Fallout'></a>Level 2 - Fallout
 **Target: claim ownership of the [contract](./lib/levels/Fallout.sol).**
+
 ### Weakness
 The contract used a syntax deprecated since v 0.5. The function meant to be the constructor isn't one. It can actually be called after contract initialisation. It has a public visibility and can be called by anyone.
+
 ### Solidity Concept: [constructor](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#constructors)
 *A constructor is an optional function declared with the constructor keyword which is executed upon contract creation, and where you can run contract initialisation code.
 Before the constructor code is executed, state variables are initialised to their specified value if you initialise them inline, or zero if you do not.*
 **Prior to version 0.4.22, constructors were defined as functions with the same name as the contract. This syntax was deprecated and is not allowed anymore in version 0.5.0.**
 
 The `Fal1out()` function was supposed to be named `Fallout()` and would have been the contract's constructor as syntax previous version 0.5.
+
 ### Hack
-Simply call the `Fal1out() function`.
+Call `Fal1out()`.
+
 ### Takeaways
 - Work with the latest compiler versions which are more secure.
 - Listen to the compiler warnings.
@@ -74,6 +81,7 @@ Simply call the `Fal1out() function`.
 
 ## <a name='CoinFlip'></a> Level 3 - Coin Flip
 **Target: [guess](./lib/levels/CoinFlip.sol) the correct outcome 10 times in a row.**
+
 ### Weakness
 The contract tries to create randomness by relying on blockhashes, block number and a given `FACTOR`. This data isn't secret:
 - `blockhash()` and `block.number` are global variables in solidity
@@ -82,11 +90,13 @@ The contract tries to create randomness by relying on blockhashes, block number 
 ### Solidity Concepts
 `blockhash(uint blockNumber) returns (bytes32)`:  hash of the given block - only works for 256 most recent blocks
 `block.number (uint)`: current block number
+
 ### Hack
 Deploy an [attacker contract](FIXME).
 1. Attacker contract compute the `blockValue` by using the `block.number` and `blockhash()` global variables.
 2. As `FACTOR` is known, the attacker contract can next compute`coinFlip` and `side`.
 3. Pass the right `side` argument to the original `flip` function that we call from the attacker contract.
+
 ### Takeaways
 **There’s no true randomness on Ethereum blockchain**, only "pseudo-randomness" i.e. random generators that are considered “good enough”.
 There currently isn't a native way to generate true randomness in the EVM.  
