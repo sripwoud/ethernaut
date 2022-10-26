@@ -22,12 +22,12 @@ contract CoinFlipTest is Test {
   }
 
   function testHack() public {
-    for (uint256 i = 0; i < 1; i++) {
+    for (uint256 i = 0; i < 11; i++) {
       utils.mineBlocks(1);
       vm.prank(player);
       coinFlipHack.hack();
     }
 
-    coinFlipFactory.validateInstance(coinFlipAddress, player);
+    assertTrue(coinFlipFactory.validateInstance(coinFlipAddress, player), 'Level not solved');
   }
 }
