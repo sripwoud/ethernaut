@@ -23,7 +23,6 @@ contract TokenTest is Test {
   function testHack() public {
     vm.prank(player);
     token.transfer(tokenAddress, 21);
-
     assertTrue(tokenFactory.validateInstance(tokenAddress, player), 'Level not solved');
   }
 }

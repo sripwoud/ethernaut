@@ -23,7 +23,6 @@ contract FalloutTest is Test {
   function testHack() public {
     vm.prank(player);
     fallout.Fal1out();
-
-    falloutFactory.validateInstance(falloutAddress, player);
+    assertTrue(falloutFactory.validateInstance(falloutAddress, player), 'Level not solved');
   }
 }

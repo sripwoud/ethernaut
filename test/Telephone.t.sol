@@ -24,6 +24,6 @@ contract TelephoneTest is Test {
   function testHack() public {
     vm.prank(player);
     telephoneHack.hack();
-    telephoneFactory.validateInstance(telephoneAddress, player);
+    assertTrue(telephoneFactory.validateInstance(telephoneAddress, player), 'Level not solved');
   }
 }

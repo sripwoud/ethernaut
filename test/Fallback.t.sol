@@ -31,6 +31,8 @@ contract FallbackTest is Test {
     vm.prank(player);
     fallbackContract.withdraw();
 
-    fallbackFactory.validateInstance(fallbackContractAddress, player);
+    assertTrue(
+      fallbackFactory.validateInstance(fallbackContractAddress, player), 'Level not solved'
+    );
   }
 }
