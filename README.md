@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 9: King](#King)  
 [Level 10: Re-entrancy](#Reentrancy)  
 [Level 11: Elevator](#Elevator)  
 [Level 12: Privacy](#Privacy)  
@@ -29,29 +28,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    ```commandline
    forge test --mc LevelName
    ```
-
-## <a name='King'></a>Level 9 - King
-**Target: Prevent losing kingship when submitting your [contract](./lib/levels/King.sol) instance.**
-### Weakness
-The contract uses `transfer` instead of a withdraw pattern to send Ether.
-### Solidity Concepts: [sending and receiving Eth](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#sending-and-receiving-ether)
-- Neither contracts nor “external accounts” are currently able to prevent that someone sends them Ether. Contracts can react on and reject a regular transfer
-- If a contract receives Ether (without a function being called), either the receive Ether or the fallback function is executed. **If it does not have a receive nor a fallback function, the Ether will be rejected (by throwing an exception).**
-
-### Hack
-Upon submission, the level contract sends an Ether amount higher than `prize` to the contract instance contract fallback to reclaim kingship. The fallback uses `transfer` to send the prize value to the current king which about to be replace. Only then the king address is updated. If the current king is a contract without a fallback or receive function execution will fail before the king address can be updated.
-1. Deploy a malicious contract without neither a payable fallback nor a payable receive function
-2. Let this malicious contract become king by sending Ether to the vKing contract
-3. Submit instance
-
-### Takeaways
-- Assume any external account or contract you don't know/own is potentially malicious
-- Never assume transactions to external contracts will be successful
-- Handle failed transactions on the client side in the event you do depend on transaction success to execute other core logic.
-
-Especially when transferring ETH:
-- Avoid using `send()` or `transfer()`. If using `send()` check returned value
-- Prefer a ['withdraw' pattern](https://solidity.readthedocs.io/en/v0.6.2/common-patterns.html#withdrawal-from-contracts) to send ETH
 
 ## <a name='Reentrancy'></a>Level 10 - Re-entrancy
 **Target: steal all funds from the [contract](./lib/levels/Reentrance.sol).**
