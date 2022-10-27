@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 8: Vault](#Vault)  
 [Level 9: King](#King)  
 [Level 10: Re-entrancy](#Reentrancy)  
 [Level 11: Elevator](#Elevator)  
@@ -30,55 +29,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    ```commandline
    forge test --mc LevelName
    ```
-
-## <a name='Vault'></a>Level 8 - Vault
-**Target: Unlock Vault [contract](./lib/levels/Vault.sol).**
-### Weakness
-The `unlock` function relies on a password with a `private` visibility.
-There is no real privacy on Ethereum which is public blockchain.
-The `private` visibility parameter is misleading as all data can still be read.
-Indeed the contract is available, so an attacker can know in which storage slot a variable is stored in and access its value manually using `getStorageAt`.
-### Solidity Concepts: storage
-#### [Storage: storage vs memory](https://solidity.readthedocs.io/en/v0.6.2/introduction-to-smart-contracts.html#storage-memory-and-the-stack)
-- storage: persistent data between function calls and transactions.
-	- Key-value store that maps 256-bit words to 256-bit words.
-	- Not possible to enumerate storage from within a contract
-	- Costly to read, and even more to initialise and modify storage. Because of this cost, you should minimize what you store in persistent storage to what the contract needs to run. Store data like derived calculations, caching, and aggregates outside of the contract.
-	- A contract can neither read nor write to any storage apart from its own.
-- memory ~ RAM: not persistent.  A contract obtains a freshly cleared instance of memory for each message call
-
-#### [Layout](https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-of-state-variables-in-storage)
-Data stored is storage in laid out in slots according to these rules:
-- Each slot allows 32 bytes = 256 bits
-- Slots start at index 0
-- Variables are indexed in the order they’re defined in contract
-```
-contract Sample {
-    uint256 first;  // slot 0
-    uint256 second; // slot 1
-}
-```
-- Bytes are being used starting from the right of the slot
-- If a variable takes under < 256 bits to represent, leftover space will be shared with following variables if they fit in this same slot.
-- If a variable does not fit the remaining part of a storage slot, it is moved to the next storage slot.
-- Structs and arrays (non elementary types) always start a new slot and occupy whole slots (but items inside a struct or array are packed tightly according to these rules).
-- Constants don’t use this type of storage. (They don't occupy storage slots)
-
-![Storage layout image](https://miro.medium.com/max/2000/1*wY8Si-mt_QZWqg0jnEDw8A.jpeg)
-
-#### Read storage: [web3.eth.getStorageAt](https://web3js.readthedocs.io/en/v1.2.6/web3-eth.html#getstorageat)
-Knowing a contract's address and the storage slot position a variable is stored in, it is possible to read its value value using the `getStorageAt` function of web3.js.
-## Hack
-1. Read contract to find out the slot `password` is stored in:
-	- `locked` bool takes 1 bit of the first slot index 0
-	- `password` is 32 bytes long. It can fit on the first slot so it goes on next slot at index 1
-2. Read storage at index 1
-3. Pass this value to the unlock function
-
-## Takeaways
-- [Nothing is private in the EVM]()https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#private-information-and-randomness: addresses, timestamps, state changes and storage are publicly [visible](https://etherscan.io/).
-- Even if a contract set a storage variable as `private`, it is possible to read its value with `getStorageAt`
-- When necessary to store sensitive value onchain, hash it first (e.g with sha256)
 
 ## <a name='King'></a>Level 9 - King
 **Target: Prevent losing kingship when submitting your [contract](./lib/levels/King.sol) instance.**
