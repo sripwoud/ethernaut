@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import 'forge-std/console.sol';
-
 contract Reentrance {
   mapping(address => uint256) balances;
 
@@ -21,6 +19,7 @@ contract Reentrance {
         _amount;
       }
 
+      /// @dev: original level contract has solidity version 0.6.0, which allows over/underflow, unchecked to simulate this earkness with 0.8.0
       unchecked {
         balances[msg.sender] -= _amount;
       }

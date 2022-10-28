@@ -5,7 +5,6 @@ import 'levels/ReentranceFactory.sol';
 import 'levels/Reentrance.sol';
 import 'src/ReentranceHack.sol';
 import 'utils/TestUtils.sol';
-import 'forge-std/console.sol';
 
 contract ReentranceTest is Test {
   address player;
@@ -14,7 +13,7 @@ contract ReentranceTest is Test {
   address payable reentranceAddress;
   Reentrance reentrance;
   ReentranceHack reentranceHack;
-  uint256 amount = 0.001 ether;
+  uint256 amount = 0.002 ether;
 
   function setUp() public {
     utils = new Utils();

