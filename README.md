@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 12: Privacy](#Privacy)  
 [Level 13: Gatekeeper One](#GatekeeperOne)  
 [Level 14: Gatekeeper Two](#GatekeeperTwo)  
 [Level 15: Naught Coin](#NaughtCoin)  
@@ -26,41 +25,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    ```commandline
    forge test --mc LevelName
    ```
-
-## <a name='Privacy'></a>Level 12 - Privacy
-**Target: unlock [contract](./lib/levels/Privacy.sol).**
-### Weakness
-Similarly to the [Level 8 -Vault](#Vault), the contract's security relies on the value of a variable defined as private. This variable is actually publicy visible
-### Solidity Concepts
-The **layout of storage data in slots** and how to **read data from storage with `getStorageAt`** were covered in [Level 8 -Vault](#Vault).
-
-The slots are 32 bytes long.
-**1 byte = 8 bits = 4 nibbles = 4 hexadecimal digits**.
-In practice, when using e.g `getStorageAt` we get string hashes of length 64 + 2 ('0x') = 66.
-### Hack
-1. Analyse storage layout:  
-	|slot|variable|
-	|--|--|
-	|0|bool (1 bit long)|
-	|1|ID (256 bits long)|
-	|2|awkwardness (16 bytes) - denomination (8 bytes) - flattening (8 bytes)|
-	|3|data[0] (32 bytes long)|
-	|4|data[1] (32 bytes long)|
-	|5|data[2] (32 bytes long)|
-
-The `_key` variable is slot 5.
-2. Take the first 16 bytes = take the first 2 ('0x') + 2 * 16 = 34 characters of the bytestring.
-
-### Takeaways
-- Same as for [Level 8 -Vault](#Vault):
-	- All storage is publicly visible, even `private` variables
-	- Don't store passwords or secret data on chain without hashing them first
-- Storage optimization
-	-  Use `memory` instead of storage if persisting data in state is not necessary
-	- Order variables in such way that slots occupdation is maximized.
-
-![Less efficient storage layout](https://miro.medium.com/max/2000/1*g3odw8DHxmw0YPrhqDf3oA.jpeg)
-![More efficient storage layout](https://miro.medium.com/max/2000/1*Zl3EkleTiPQEssEsu44MuA.jpeg)
 
 ## <a name=GatekeeperOne></a>Level 13 - Gatekeeper One
 **Target: make it past the [gatekeeper one](./lib/levels/GatekeeperOne.sol).**
