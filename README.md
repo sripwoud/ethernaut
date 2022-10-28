@@ -3,8 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 10: Re-entrancy](#Reentrancy)  
-[Level 11: Elevator](#Elevator)  
 [Level 12: Privacy](#Privacy)  
 [Level 13: Gatekeeper One](#GatekeeperOne)  
 [Level 14: Gatekeeper Two](#GatekeeperTwo)  
