@@ -1,6 +1,13 @@
 name: test
 
-on: workflow_dispatch
+on:
+  pull_request:
+    paths:
+      - '**.sol'
+  push:
+    paths:
+      - '**.sol'
+  workflow_dispatch:
 
 env:
   FOUNDRY_PROFILE: ci
