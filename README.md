@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 16: Preservation](#Preservation)  
 [Level 17: Recovery](#Recovery)  
 [Level 18: Magic Number](#MagicNumber)  
 [Level 19: Denial](#Denial)  
@@ -23,27 +22,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    forge test --mc LevelName
    ```
 
-## <a name='Preservation'></a>Level 16 - Preservation
-**Target**
-> This [contract](./lib/levels/Preservation.sol) utilizes a library to store two different times for two different timezones. The constructor creates two instances of the library for each time to be stored.
-The goal of this level is for you to claim ownership of the instance you are given.
-
-### Weakness
-1. `Preservation` uses Libraries:
-Libraries use `delegatecall`s. [Level 6 -Delegation] taught us that using `delegatecall` is risky as it allows the called contract to modifiy the storage of the calling contract.
-2. Storage layouts of `Preservation` and `LibraryContract` don't match:
-Calling the library won't modifiy the expected `storedTime` variable.
-### Solidity Concept: [libraries](https://solidity.readthedocs.io/en/v0.6.2/contracts.html#libraries)
-> Libraries are similar to contracts, but their purpose is that they are deployed only once at a specific address and their code is reused using the DELEGATECALL (CALLCODE until Homestead) feature of the EVM. This means that if library functions are called, their code is executed in the context of the calling contract, i.e. `this` points to the calling contract, and especially the storage from the calling contract can be accessed.
-
-So Libraries are a particular case where functions are on purpose called with `delegatecall` because preserving context is desired.
-### Hack
-As libraries use `delegatecall`, they can modify the storage of `Preservation`.
-`LibraryContract` can modify the first slot (index 0) of `Preservation`, which is `address public timeZone1Library`. So we can "set" `timeZone1Library` by calling `setFirstTime(_timeStamp)`. The `uint _timeStamp` passed will converted to an `address` type though. It means we can cause `setFirstTime()` to execute a `delegatecall` from a library address different from the one defined at initialization. We need to define this malicious library so that its `setTime` function modifies the slot where `owner` is stored: slot of index 2.
-
-![preservation hack workflow](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/preservationHack.png)
-
-### Takeaways
 ## <a name='Recovery'></a>Level 17 - Recovery
 **Target**
 > A contract creator has built a very simple token factory [contract](./lib/levels/Recovery.sol). Anyone can create new tokens with ease. After deploying the first token contract, the creator sent 0.5 ether to obtain more tokens. They have since lost the contract address.

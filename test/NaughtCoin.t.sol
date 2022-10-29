@@ -21,7 +21,7 @@ contract NaughtCoinTest is Test {
   }
 
   function testHack() public {
-    uint balance = naughtCoin.balanceOf(users[0]);
+    uint256 balance = naughtCoin.balanceOf(users[0]);
 
     vm.prank(users[0]);
     naughtCoin.approve(users[1], balance);
