@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 15: Naught Coin](#NaughtCoin)  
 [Level 16: Preservation](#Preservation)  
 [Level 17: Recovery](#Recovery)  
 [Level 18: Magic Number](#MagicNumber)  
@@ -24,31 +23,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    forge test --mc LevelName
    ```
 
-## <a name='NaughtCoin'></a>Level 15 - Naughtcoin
-**Target: transfer your [naughtcoins](./lib/levels/NaughtCoin.sol) to another address.**
-### Weakness
-`NaughCoin` inherits from the [ERC20](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol) contract.
-Looking at this contract, we notice that `transfer()` is not the only function to transfer tokens.  
-Indeed `transferFrom(address sender, address recipient, uint256 amount)` can be used instead: provided that a 3rd user (`spender`) was allowed beforehand by the `owner` of the tokens to spend a given `amount` of the total `owner`'s balance, `spender` can transfer `amount`  to `recipient` in the name of `owner`.  
-Successfully executing `transferFrom` requires the caller to have allowance for `sender`'s tokens of at least `amount`. The allowance can be set with the `approve` or `increaseAllowance` functions inherited from ERC20.
-### Concepts: [ERC20 token contract](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/token/ERC20/ERC20.sol)
-The ERC20 token contract is related to the [EIP 20 - ERC20 token standard](https://eips.ethereum.org/EIPS/eip-20). It is the most widespread token standard for fungible assets.  
->Any one token is exactly equal to any other token; no tokens have special rights or behavior associated with them. This makes ERC20 tokens useful for things like a medium of exchange currency, voting rights, staking, and more.
-
-### Hack
-#### Architecture
-`transferFrom` calls `_transfer` and `_approve`.  `_approve` calls `allowance` and checks whether the caller was allowed to spend the `amount` by `sender`.
-
-![architecture diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/naughtCoinArchitecture.png)
-
-#### Workflow
-We want to set the player's allowance for the attack contract. For this we need to call`approve()` which calls `_approve(msg.sender, spender, amount)`. In this call we need `msg.sender == player`, so we can't call `victim.approve()` from the attacker contract. If we would, then `msg.sender == attackerContractAddress`. This would set the attacker contract's allowance instead of the player's one. So we call `victim.approve()` directly from the player's address.
-Finally we let the attacker call `transferFrom()` to transfer to itself the player's tokens.
-
-![Hack workflow diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/naughtCoinHack.png)
-
-### Security Takeaways
-Get familiar with contracts you didn't write, especially with imported and inherited contracts. Check how they implement authorization controls.
 ## <a name='Preservation'></a>Level 16 - Preservation
 **Target**
 > This [contract](./lib/levels/Preservation.sol) utilizes a library to store two different times for two different timezones. The constructor creates two instances of the library for each time to be stored.

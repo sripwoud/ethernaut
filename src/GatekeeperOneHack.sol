@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 
 import 'levels/GatekeeperOne.sol';
-import 'forge-std/console.sol';
 
 contract GatekeeperOneHack {
   GatekeeperOne internal gatekeeperOne;
