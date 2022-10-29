@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 14: Gatekeeper Two](#GatekeeperTwo)  
 [Level 15: Naught Coin](#NaughtCoin)  
 [Level 16: Preservation](#Preservation)  
 [Level 17: Recovery](#Recovery)  
@@ -25,28 +24,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    forge test --mc LevelName
    ```
 
-## <a name='GatekeeperTwo'></a>Level 14 - Gatekeeper Two
-**Target: make through the [gatekeeper two](./lib/levels/GatekeeperTwo.sol)**
-### Weakness
-- gateOne relies on `tx.origin`.
-- Being able to reading the public contract logic teaches how to pass gateTwo and gateThree.
-
-### Solidity Concepts: [inline assembly](https://solidity.readthedocs.io/en/v0.6.6/assembly.html) & contract creation/initialization
-
-From the [Ethereum yellow paper](https://ethereum.github.io/yellowpaper/paper.pdf) section 7.1 - subtleties we learn:
-> while the initialisation code is executing, the newly created address exists but with no intrinsic body code⁴.
-> 4. During initialization code execution, EXTCODESIZE on the address should return zero [...]
-
-### Hack
-1. gateOne: similar to the gateOne of [Level 13 - Gatekeeper One](#GatekeeperOne) or to the hack of [Level 4 - Telephone](#Telephone)
-2. gateTwo: call the `enter` function **during contract initialization**, i.e from within `constructor` to ensure `EXTCODESIZE = 0`
-3. gateThree
-	- `uint64(bytes8(keccak256(abi.encodePacked(msg.sender)))) ^ uint64(_gateKey)` noted `a ^ b` means `a XOR b`
-	- `uint64(0) - 1`: underflow, this is equals to `uint64(1)`  
-So we need to take `_gatekey = ~msg.sender` (Bitwise NOT) to ensure that the XOR product of each bit of `a` and `b` will be 1.
-
-### Takeaways
-During contract initialization, the contract has no intrinsic body code and its `extcodesize` is 0.
 ## <a name='NaughtCoin'></a>Level 15 - Naughtcoin
 **Target: transfer your [naughtcoins](./lib/levels/NaughtCoin.sol) to another address.**
 ### Weakness
