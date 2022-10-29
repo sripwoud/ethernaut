@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 13: Gatekeeper One](#GatekeeperOne)  
 [Level 14: Gatekeeper Two](#GatekeeperTwo)  
 [Level 15: Naught Coin](#NaughtCoin)  
 [Level 16: Preservation](#Preservation)  
@@ -25,64 +24,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    ```commandline
    forge test --mc LevelName
    ```
-
-## <a name=GatekeeperOne></a>Level 13 - Gatekeeper One
-**Target: make it past the [gatekeeper one](./lib/levels/GatekeeperOne.sol).**
-### Weakness
-- Contract relies on `tx.origin`.
-- - Being able to read the public contract logic teaches how to pass gateTwo and gateThree.
-
-### Solidity Concepts: [explicit conversions](https://solidity.readthedocs.io/en/v0.6.6/types.html#explicit-conversions) and [masking](https://en.wikipedia.org/wiki/Mask_(computing))
-#### Explicit type conversions
-Be careful, **conversion of integers and bytes behave differently**!
-
-|conversion to|uint|bytes|
-|--|--|--|
-|shorter type|**left-truncate**: `uint8(273 = 0000 0001 0001 0001) = 00001 0001 = 17`|**right-truncate**: `bytes4(0x1111111122222222) = 0x11111111`|
-|larger type|**left-padded** with 0: `uint16(17 = 0001 0001) = 0000 0000 0001 0001 = 17`|**right-padded** with 0: `bytes8(0x11111111) = 0x1111111100000000`
-
-#### [Masking](https://en.wikipedia.org/wiki/Mask_(computing))
-Masking means using a particular sequence of bits to turn some bits of another sequence "on" or "off" via a bitwise operation.
-For example to "mask off" part of a sequence, we perform an `AND` bitwise operation with:
-- `0` for the bits to mask
-- `1` for the bits to keep
-
-```
-    10101010
-AND 00001111
- =  00001010
-```
-### Hack
-1. Pass `gateOne`: deploy an attacker contract that will call the victim contract's `enter` function to ensure `msg.sender != tx.origin`.
-This is similar to what we've accomplished for the [Level 4 - Telephone](#Telephone)
-2. Pass `gateTwo`
-3. Pass `gateThree`
-Note that we need to pass a 8 bytes long `_gateKey`. It is then explicitly converted to a 64 bits long integer.
-	1. Part one
-		- `uint16(uint64(_gateKey))`: uint64 gateKey is converted to a shorter type (uint16) so we keep the last 16 bits of gateKey.
-		- `uint32(uint64(gateKey))`: uint64 gateKey is converted to a shorter type (uint32) so we keep the last 32 bits of gateKey
-		- `uint32(uint64(gateKey)) == uint16(uint64(gateKey))`: we convert uint16 to a larger type (uint32), so we pad the last 16 bits of gateKey with 16*0 on the left. This concatenation should equal the last 32 bits of gateKey.
-		- Mask to apply on the last 32 bits of gateKey:
-`0000 0000 0000 0000 1111 1111 1111 1111 = 0x0000FFFF`
-	2. Part two
-		- `uint32(uint64(gateKey)`: last 32 bits of gateKey
-		- `uint32(uint64(gateKey)) != uint64(_gateKey)`: the last 32 bits of gateKey are converted to a larger type (uint64), so we pad them with 32*0 on the left. This concanetation (32*0-last32bitsofGateKey) should not equal gateKey: so we need to keep the first bits of gateKey
-		- Mask to apply to keep the first 32 bits:
-`0xFFFFFFFF`  
- - We then concatenate both masks:
-`0xFFFF FFFF 0000 FFFF`
-Requires keeping the first 32 bits, mask with 0xFFFFFFFF.
-Concatenated with the first part: mask = 0xFFFF FFFF 0000 FFFF
-	3. Part three: `uint32(uint64(gateKey)) == uint16(tx.origin)`
-	 - we need to take gatekey = tx.origin
-	 - we then apply the mask on tx.origin to ensure part one and two are correct
-
-### Takeaways
-- Abstain from asserting gas consumption in your smart contracts, as different compiler settings will yield different results.
-- Be careful about data corruption when converting data types into different sizes.
-- Save gas by not storing unnecessary values.
-- Save gas by using appropriate modifiers to get functions calls for free, i.e. external pure or external view function calls are free!
-- Save gas by masking values (less operations), rather than typecasting
 
 ## <a name='GatekeeperTwo'></a>Level 14 - Gatekeeper Two
 **Target: make through the [gatekeeper two](./lib/levels/GatekeeperTwo.sol)**
