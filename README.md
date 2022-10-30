@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 20: Alien Codex](#AlienCodex)  
 [Level 21: Shop](#Shop)  
 
 ## Requirements
@@ -18,42 +17,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    ```commandline
    forge test --mc LevelName
    ```
-
-## <a name='AlienCodex'></a>Level 20 - Alien Codex
-**Target: claim ownership of the [contract](./lib/levels/AlienCodex.sol)**
-### Weakness
-`codex` is stored as a dynamic array. `retract()` reduces `codex` length without checking against underflow. So it is actually possible to set the `codex` array length to 2²⁵⁶ -1, which gives power to modify all storage slots.
-### Solidity Concepts: [storage layout](https://solidity.readthedocs.io/en/v0.6.6/miscellaneous.html#mappings-and-dynamic-arrays) of dynamically sized variables
-Each smart contract running on the Ethereum Virtual Machine maintains its own state using a key:value storage mapping. The number possible of keys is so **huge** that most keys actually contain empty values.  Each key is called a slot. They are  2²⁵⁶ - 1 slots. Each slot can contain 32 bytes of data.  
-In the [Level 8 -Vault](#Vaultt), I listed the basic storage layout [rules](https://solidity.readthedocs.io/en/v0.6.2/miscellaneous.html#layout-of-state-variables-in-storage). Each statically sized variable gets a reserved slot which is defined at compilation time.  
-But what about dynamically sized variables? As their size is not fixed beforehand, how to know which slots to reserve?  
-With regular hard drive space or RAM an *allocation* step to find free space to use exists, which is followed by a *release* step to put that space back into the pool of available storage. The number of storage locations of a smart contract is so huge that it manages its storage differently. It just needs to figure a way to define a storage location to start from. Indeed the likelihood of having location clashes is (not rigorously) 0.
-> Due to their unpredictable size, mapping and dynamically-sized array types use a Keccak-256 hash computation to find the starting position of the value or the array data. These starting positions are always full stack slots.
-> For dynamic arrays, [the] slot stores the number of elements in the array (byte arrays and strings are an exception, see below). For mappings, the slot is unused (but it is needed so that two equal mappings after each other will use a different hash distribution). Array data is located at keccak256(p) and the value corresponding to a mapping key k is located at keccak256(k . p) where . is concatenation.
-
-![storage of dynamic array](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/dynamic.png)
-![storage of mapping](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/mapping.png)
-## Hack
-0. Analyze storage layout
-
-  |Slot #|Variable|
-  |--|--|
-  |0|contact bool (1 bytes) & owner address (20 bytes), both fit on one slot|
-  |1|codex.length|
-  |keccak256(1)|codex[0]|
-  |keccak256(1) + 1|codex[1]|
-  |...||
-  |2²⁵⁶ - 1|codex[2²⁵⁶ - 1 - uint(keccak256(1))]|
-  |||
-  |0|codex[2²⁵⁶ - 1 - uint(keccak256(1)) + 1] --> can write slot 0!|
-
-1. call `make_contact` to be able to pass the `contacted` modifer
-3. call `retract`: this provokes and underflow which leads to `code.length = 2^256 - 1`
-4.  Compute codex `index` corresponding to slot 0: `2²⁵⁶ - 1 - uint(keccak256(1)) + 1 = 2²⁵⁶ - uint(keccak256(1))`
-5.  Call `reverse` passing it `index` and your address left padded with 0 to total 32 bytes as `content`
-
-## Takeaways
-Modifying a dynamic array length without checking for over/underflow is very dangerous as it can expand the array's bounds to the entire storage area of 2^256 - 1. This can possibly enable modifying the whole contract storage.
 
 ## <a name='Shop'></a>Level 21 - Shop
 **Target: get the item from the [shop](./lib/levels/Shop.sol) for less than the price asked.**
