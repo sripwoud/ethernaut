@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 19: Denial](#Denial)  
 [Level 20: Alien Codex](#AlienCodex)  
 [Level 21: Shop](#Shop)  
 
@@ -20,38 +19,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    forge test --mc LevelName
    ```
 
-## <a name='Denial'></a>Level 19 - Denial
-**Target**
-> This is a simple wallet that drips funds over time. You can withdraw the funds slowly by becoming a withdrawing partner.
-If you can deny the owner from withdrawing funds when they call withdraw() (whilst the [contract](./lib/levels/Denial.sol) still has funds) you will win this level.
-
-### Weakness
-The `withdraw` function uses `call` to send ETH to an unknown address. This poses two threats:
-1. Reentrancy (see [Level 10 - Reentrancy](#Reentrancy): the recipient can implement a malicious fallback that will call back ('reenter') the `withdraw` function
-2. Out Of Gas (OOG) error: `call` forwards all gas. The recipient may consume it all to prevent the execution of the following instructions.
-### Solidity Concepts: [error handling]()
-
-|expression|syntax|effect|OPCODE||
-|--|--|--|--|--|
-|throw|`if (condition) { throw; }`|reverts all state changes and deplete gas|version<0.4.1: INVALID OPCODE  - 0xfe, after:  REVERT- 0xfd|deprecated in version 0.4.13 and removed in version 0.5.0
-|assert|`assert(condition);`|reverts all state changes and depletes all gas|INVALID OPCODE - 0xfe
-|revert|`if (condition) { revert(value) }`|reverts all state changes, allows returning a value, refunds remaining gas to caller|REVERT - 0xfd
-|require|`require(condition, "comment")`|reverts all state changes, allows returning a value, refunds remaining gas to calle|REVERT - 0xfd
-
-So the main difference is that `assert` depletes all gas while `revert` and `require` don't. `require` is a less verbose version of `revert`.
-When to use which error handling method? According to the [solidity documentation](https://solidity.readthedocs.io/en/latest/control-structures.html#id4)
-> The assert function should only be used to test for internal errors, and to check invariants. Properly functioning code should never reach a failing assert statement; if this happens there is a bug in your contract which you should fix.
-> The require function should be used to ensure valid conditions that cannot be detected until execution time. This includes conditions on inputs or return values from calls to external contracts.
-
-### Hack
-We want to make the `owner.transfer(amountToSend);` instruction fail right after the `partner.call.value(amountToSend)("");` instruction. As `call` forwards all gas, we will cause an Out Of Gas error.
-1. Deploy a malicious contract and set it as withdraw partner with `setWithdrawPartner`
-2. Cause an Out Of Gas Error by implementing a malicious fallback (that receive the ETH sent by the `partner.call.value(amountToSend)("")` instruction)
-	- Option 1: reenter in `denial.withdraw()`
-	- Option 2: `assert` a false condition
-
-### Takeaways
-See [Level 10 - Reentrancy](#Reentrancy) takeaways.
 ## <a name='AlienCodex'></a>Level 20 - Alien Codex
 **Target: claim ownership of the [contract](./lib/levels/AlienCodex.sol)**
 ### Weakness
