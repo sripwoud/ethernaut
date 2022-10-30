@@ -3,10 +3,10 @@ name: test
 on:
   pull_request:
     paths:
-      - '**.sol'
+      - '**/*.sol'
   push:
     paths:
-      - '**.sol'
+      - '**/*.sol'
   workflow_dispatch:
 
 env:
