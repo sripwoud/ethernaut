@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 17: Recovery](#Recovery)  
 [Level 18: Magic Number](#MagicNumber)  
 [Level 19: Denial](#Denial)  
 [Level 20: Alien Codex](#AlienCodex)  
@@ -21,40 +20,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    ```commandline
    forge test --mc LevelName
    ```
-
-## <a name='Recovery'></a>Level 17 - Recovery
-**Target**
-> A contract creator has built a very simple token factory [contract](./lib/levels/Recovery.sol). Anyone can create new tokens with ease. After deploying the first token contract, the creator sent 0.5 ether to obtain more tokens. They have since lost the contract address.
-This level will be completed if you can recover (or remove) the 0.5 ether from the lost contract address.
-
-### Weakness
-The generation of contract addresses are pre-deterministic and can be guessed in advance.
-### Solidity Concepts: selfdestruct, encodeFunctionCall, & generation of contract addresses
-- [selfdestruct](https://solidity.readthedocs.io/en/v0.6.2/units-and-global-variables.html#contract-related): see [Level 7 - Force]
-Sefdestruct is a method tha can be used to send ETH to a recipient upon destruction of a contract.
-- [encodeFunctionCall](https://web3js.readthedocs.io/en/v1.2.6/web3-eth-abi.html#encodefunctioncall)
-At [Level 6 - Delegation](#Delegation), we learnt how to make function call even though we don't know the ABI: by sending a raw transaction to a contract and passing the function signature into the data argument. More convenienttly, this can be done with the [encodeFunctionCall](https://web3js.readthedocs.io/en/v1.2.6/web3-eth-abi.html#encodefunctioncall) function of web3.js: `web3.eth.abi.encodeFunctionCall(jsonInterface, parameters)`
-- generation of contract addresses, from the [Etherem yellow paper](https://ethereum.github.io/yellowpaper/paper.pdf), section 7 - contract creation:
-
-![Ethereum Yellow Paper screenshot - contract address generation](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/contractAddressGeneration.png)
-
-So in JavaScript, using the [web3.js](https://github.com/ethereum/web3.js/) and [rlp](https://github.com/ethereumjs/rlp) libraries, one can compute the contract address generated upon creation as follows.
-```
-// Rightmost 160 digits means rightmost 160 / 4 = 40 hexadecimals characters
-contractAddress = '0x' + web3.utils.sha3(RLP.encode([creatorAddress, nonce])).slice(-40))
-```
-### Hack
-1. Instantiate level. This will create 2 contracts:
-	- nonce 0: `Recovery` contract
-	- nonce 1: `SimpleToken` contract
-2. Compute the `address` of the `SimpleToken`:
-	- sender = instance address
-	- nonce = 1
-3.  Use `encodeFunctionCall` to call the `destruct` function of `SimpleToken` instance at `address`.
-### Takeaways
-> Contract addresses are deterministic and are calculated by keccack256(rlp([address, nonce])) where the address is the address of the contract (or ethereum address that created the transaction) and nonce is the number of contracts the spawning contract has created (or the transaction nonce, for regular transactions).
-Because of this, one can send ether to a pre-determined address (which has no private key) and later create a contract at that address which recovers the ether. This is a non-intuitive and somewhat secretive way to (dangerously) store ether without holding a private key.
-An interesting blog [post](https://swende.se/blog/Ethereum_quirks_and_vulns.html) by Martin Swende details potential use cases of this.
 
 ## <a name='MagicNumber'></a>Level 18 - MagicNumber
 **Target**
