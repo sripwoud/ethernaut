@@ -3,7 +3,6 @@
 
 Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki).
 
-[Level 18: Magic Number](#MagicNumber)  
 [Level 19: Denial](#Denial)  
 [Level 20: Alien Codex](#AlienCodex)  
 [Level 21: Shop](#Shop)  
@@ -20,87 +19,6 @@ Solutions progressively moved to [wiki](https://github.com/r1oga/ethernaut/wiki)
    ```commandline
    forge test --mc LevelName
    ```
-
-## <a name='MagicNumber'></a>Level 18 - MagicNumber
-**Target**
-> provide the Ethernaut with a "Solver", a [contract](./lib/levels/MagicNum.sol) that responds to "whatIsTheMeaningOfLife()" with the right number.
-
-### Solidity Concepts
-#### Contract creation bytecode
-Smart contracts run on the Ethereum Virtual Machine (EVM). The EVM understands smart contracts as bytecode. Bytecode is a sequence of hexadecimal characters:
-`0x6080604052348015600f57600080fd5b5069602a60005260206000f3600052600a6016f3fe`.
-Developers on the other hand, write and read them using a more human readable format: solidity files.  
-The solidity **compiler** digests `.sol` files to generate:
-- contract creation bytecode: this is the smart contract format that the EVM understands
-- assembly code: this is the bytecode as a sequence of **opcodes**. From a human point of view, it is less readable that Solidity code but more readable than bytecode.
-- Application Binary Interface (ABI): this is like a customized interpret in a JSON format that tells applications (e.g a Dapp making function calls using web3.js) how to communicate with a specific deployed smart contract. It translates the application language (JavaScript) into bytecode that the  EVM can understand and execute.
-
-Contract creation bytecode contain 2 different pieces of bytecode:
-- **creation** code: only executed at deployment. It tells the EVM to run the constructor to initialize the contract and to store the remaining **runtime** bytecode.
-- **runtime** code: this is what lives on the blockchain at what Dapps, users will interact with.
-
-![contract creation workflow diagram](https://raw.githubusercontent.com/r1oga/ethernaut/master/img/contractCreationWorkflow.png)
-
-#### EVM = [Stack Machine](https://en.wikipedia.org/wiki/Stack_machine)
-As a stack machine, the EVM functions according to the **Last In First Out** principle: the last item entered in memory will be the first one to be consumed for the next operation.
-So an operation such as ` 1 + 2 * 3` will be written `3 2 * 1 +` and will be executed by a stack machine as follows:
-
-|Stack Level|Step 0|Step 1|Step 2|Step 3|Step 4|Step 5|Step 6|
-|--|--|--|--|--|--|--|--|
-|0|3|2| * |6|1|+|7|
-|1||3|2||6|1
-|2|||3|||6
-
-In addition to its **stack** component, the EVM has **memory**, which is like RAM in the sense that it is cleared at the end of each message call, and **storage**, which corresponds to data persisted between message calls.
-#### OPCODES
-How do we control the EVM? How do we tell it what to execute?  
-We have to give it a sequence of instructions in the form of OPCODES. An OPCODE can only push or consume items from the EVM’s stack, memory, or storage belonging to the contract.  
-Each OPCODE takes one byte.  
-Each OPCODE has a corresponding hexadecimal value: see the opcode values mapping [here](https://github.com/ethereum/py-evm/blob/master/eth/vm/opcode_values.py) (from pyevm) or in the [Ethereum Yellow Paper - appendix H](http://gavwood.com/paper.pdf).  
-So "assembling" the OPCODES hexadecimal values together means reconstructing the bytecode.  
-Splitting the bytecode into OPCODES bytes chunks means "disassembling" it.  
-
-For a more detailed guide on how to deconstruct a solidity code, check this [post](https://blog.openzeppelin.com/deconstructing-a-solidity-contract-part-i-introduction-832efd2d7737/) by Alejandro Santander in collaboration with Leo Arias.
-### Hack
-1. Runtime code
-
-	|# (bytes)|OPCODE|Stack (left to right = top to bottom)|Meaning|bytecode|
-	|--|--|--|--|--|
-	|00|PUSH1 2a||push  2a (hexadecimal) = 42 (decimal) to the stack|602a
-	|02|PUSH1 00|2a|push 00 to the stack|6000|
-	|05|MSTORE|00, 2a|`mstore(0, 2a)`, store 2a = 42 at memory position 0|52
-	|06|PUSH1 20||push 20 (hexadecimal) = 32 (decimal) to the stack (for 32 bytes of data)|6020
-	|08|PUSH1 00|20|push 00 to the stack|6000
-	|10|RETURN|00, 20|`return(memory position, number of bytes)`, return 32 bytes stored in memory position 0|f3
-  The assembly of these 10 bytes of OPCODES results in the following bytecode: `602a60005260206000f3`
-
-2. Creation code
-	We want to excute the following:
-	- `mstore(0, 0x602a60005260206000f3)`: store the 10 bytes long bytecode in memory at position 0.  
-	This will store `602a60005260206000f3` padded with 22 zeroes on the left to form a 32 bytes long bytestring.
-	- `return(0x16, 0x0a)`: starting from byte 22, return the 10 bytes long runtime bytecode.
-
-	|# (bytes)|OPCODE|Stack (left to right = top to bottom)|Meaning|bytecode|
-	|--|--|--|--|--|
-	|00|PUSH10 602a60005260206000f3||push the 10 bytes of runtime bytecode to the stack|69602a60005260206000f3|
-	|03|PUSH 00|602a60005260206000f3|push 0 to the stack|6000
-	|05|MSTORE|0, 602a60005260206000f3|`mstore(0, 0x602a60005260206000f3)`0|52
-	|06|PUSH a||push a = 10 (decimal) to the stack|600a
-	|08|PUSH 16|a|push 16 = 22 (decimal) to the stack|6016
-	|10|RETURN|16, a|`return(0x16, 0x0a)`|f3
-
-3. The complete contract creation bytecode is then `69602a60005260206000f3600052600a6016f3`
-4. Deploy the contract with `web3.eth.sendTransaction({ data: '0x69602a60005260206000f3600052600a6016f3' })`, which returns a Promise. The deployed contract address is the value of the `contractAddress` property of the object returned when the Promise resolves.
-5. Pass the address of the deployed solver contract to the `setSolver` function of the `MagicNumber` contract.
-
-
-### Takeaways
-Having an understanding of the EVM at a lower level, especially understanding how contracts are created and how bytecode can be dis/assembled from/to OPCODES is benefetial to smart contract developers in several ways:
-- better debugging
-- possibilities to finely optimize contract runtime or creation code
-
-However both operations, assembling OPCODES into bytecode or disassembling bytecode into OPCODES, are cumbersome and tricky to manually  perform without mistakes.  So for efficiency and security reasons, developers are better off leaving it to compilers, writing solidity code and working with ABIs!
->The Ethernaut is a Web3/Solidity based wargame inspired from [overthewire.org](https://overthewire.org/wargames/), played in the Ethereum Virtual Machine. Each level is a smart contract that needs to be 'hacked'.
 
 ## <a name='Denial'></a>Level 19 - Denial
 **Target**
